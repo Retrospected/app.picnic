@@ -1,0 +1,16 @@
+{
+    "title": "Picnic",
+    "settings": {
+        "title": "Picnic",
+        "subtitle": "Authenticate to Picnic with your username and password and retrieve the auth token.",
+        "username": "Username",
+        "password": "Password",
+        "secret": "Authentication token",
+        "legend": "Authentication"
+    },
+    "speech": {
+        "which_product": "Which product would you like to add?",
+        "pre_added": "I have added",
+        "post_added": "."
+    }
+}
