@@ -51,6 +51,7 @@
 
               Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
                 if( err ) return Homey.alert(err);
+                window.location.reload();
               });
 
             });
