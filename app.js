@@ -47,20 +47,10 @@ class Picnic extends Homey.App {
 				return callback(null, "success")
 			}
 			else {
-				Homey.app.log('Problem with request or authentication failed.')
 				return callback(new Error('Problem with request or authentication failed.'));
 			}
 
-			res.setEncoding('utf8');
-			res.on('data', (chunk) => {
-				Homey.app.log(`BODY: ${chunk}`);
-			});
-			res.on('end', () => {
-				Homey.app.log('No more data in response.');
-			});
-
 			req.on('error', (e) => {
-				Homey.app.log(`problem with request: ${e.message}`);
 				return callback(new Error('Problem with request or authentication failed.'));
 			});
 		});
