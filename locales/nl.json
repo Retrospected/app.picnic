@@ -2,11 +2,10 @@
     "title": "Picnic",
     "settings": {
         "title": "Picnic",
-        "subtitle": "Authenticeer met je gebruikersnaam en wachtwoord om je authroizatie token in te stellen.",
+        "subtitle": "Log in met je gebruikersnaam en wachtwoord om je autorisatie token in te stellen.",
         "username": "Gebuikersnaam",
         "password": "Wachtwoord",
-        "secret": "Authenticatie token",
-        "legend": "Authenticatie"
+        "secret": "Autorisatie token"
     },
     "speech": {
         "which_product": "Welk product wil je toevoegen?",
