@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "compatibility": ">=1.5.0",
   "sdk": 2,
   "name": {
@@ -28,12 +28,100 @@
     "homey:manager:speech-output",
     "homey:manager:speech-input"
   ],
+  "flow": {
+    "actions": [
+      {
+        "id": "add_product",
+        "title": {
+          "en": "Add a product",
+          "nl": "Voeg een product toe"
+        },
+        "args":[
+          {
+            "name":"product",
+            "type":"text",
+            "placeholder":{
+              "en":"bananas",
+              "nl":"bananen"
+            }
+          }
+        ]
+      }
+    ],
+    "triggers": [
+        {
+            "id": "groceries_ordered",
+            "title": {
+                "en": "Groceries have been ordered",
+                "nl": "Boodschappen zijn besteld"
+            },
+            "tokens": [
+               {
+                   "name": "price",
+                   "type": "number",
+                   "title": {
+                       "en": "euro"
+                   },
+                   "example": 25
+               },
+               {
+                   "name": "eta_start",
+                   "type": "string",
+                   "title": {
+                       "en": "eta_start"
+                   },
+                   "example": "2018-09-03T20:05:00.000+02:00"
+               },
+               {
+                   "name": "eta_end",
+                   "type": "string",
+                   "title": {
+                       "en": "eta_end"
+                   },
+                   "example": "2018-09-03T21:05:00.000+02:00"
+               }
+           ]
+        },
+        {
+            "id": "delivery_announced",
+            "title": {
+                "en": "Groceries will be delivered soon",
+                "nl": "Boodschappen worden binnenkort geleverd"
+            },
+            "tokens": [
+               {
+                   "name": "eta_start",
+                   "type": "string",
+                   "title": {
+                       "en": "eta_start"
+                   },
+                   "example": "2018-09-03T20:25:00.000+02:00"
+               },
+               {
+                   "name": "eta_end",
+                   "type": "string",
+                   "title": {
+                       "en": "eta_end"
+                   },
+                   "example": "2018-09-03T20:45:00.000+02:00"
+               }
+           ]
+        },
+        {
+            "id": "groceries_delivered",
+            "title": {
+                "en": "Groceries have been delivered",
+                "nl": "Boodschappen zijn bezorgd"
+            }
+        }
+    ]
+  },
   "speech": {
     "en": {
       "element": {
         "addProduct": {
           "type": "regex",
-          "value": "((add)?\\s?\\s?a?\\s?product)"
+          "value": "((add)?\\s?\\s?(a)?\\s?product)"
         }
       },
       "group": {

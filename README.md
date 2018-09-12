@@ -1,22 +1,32 @@
 ### Picnic app for Homey
 
 Doing your groceries at Picnic via Homey.
-Currently supports a voice command in English and Dutch to add a product to your basket.
+
+#### Flow Triggers:
+Polling the status of your Picnic account every 5 minutes and firing on the following events:
+
+- Groceries have been ordered.
+  - Token: price (in euro), eta_begin & eta_end (60 minutes delivery timespan)
+- Your groceries will be delivered soon (announcement of the 20min delivery timespan).
+  - Token: eta_begin & eta_end
+- Your groceries have been delivered.
+
+#### Flow Actions:
+Adding a product to your basket based on the name of the product passed as an argument.
 
 #### Speech triggers:
 ##### English
-"Add a product"
-
-Which product would you like to add?
-
-"name your product"
+<b>Trigger:</b> Add (a) product<br>
+<b>Response:</b> Which product would you like to add?<br>
+<b>Argument:</b> <'name your product'>
 
 ##### Dutch
-"Voeg (een) product toe"
+<b>Trigger:</b> Voeg (een) product toe<br>
+<b>Response:</b> Welk product wil je toevoegen?<br>
+<b>Argument:</b> <'naam van het product'>
 
-Welk product wil je toevoegen?
-
-"naam van het product"
+#### TODO:
+- Add speech command to remove last added product by Homey
 
 ### Donate
 Feel free to donate if you like the app :-)
