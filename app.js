@@ -37,16 +37,31 @@ class Picnic extends Homey.App {
 				if ( orderEvent instanceof Error ) { return Promise.reject(new Error('Status could not be retrieved.')); }
 
 				if (orderEvent["event"] == 'groceries_ordered') {
-					let data = { 'price': orderEvent["price"],  'eta_start': orderEvent["eta1_start"], 'eta_end': orderEvent["eta1_end"]}
+
+					var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+					var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+					var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+
+					let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
 					Homey.app._groceriesOrderedTrigger.trigger(data)
 				}
 				else if (orderEvent["event"] == 'delivery_announced') {
-					let eta = { 'eta_start': orderEvent["eta2_start"],
-					'eta_end': orderEvent["eta2_end"] }
+
+					var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+					var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+					var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+
+					let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
 					Homey.app._deliveryAnnouncedTrigger.trigger(eta)
 				}
 				else if (orderEvent["event"] == 'groceries_delivered') {
-					Homey.app._groceriesDelivered.trigger()
+
+					var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+					var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+
+					let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
+
+					Homey.app._groceriesDelivered.trigger(delivery)
 				}
 			})
 		}

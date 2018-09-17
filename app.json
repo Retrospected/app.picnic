@@ -60,7 +60,8 @@
                    "name": "price",
                    "type": "number",
                    "title": {
-                       "en": "euro"
+                       "en": "price",
+                       "nl": "prijs"
                    },
                    "example": 25
                },
@@ -68,17 +69,25 @@
                    "name": "eta_start",
                    "type": "string",
                    "title": {
-                       "en": "eta_start"
+                       "en": "eta begin"
                    },
-                   "example": "2018-09-03T20:05:00.000+02:00"
+                   "example": "20:05"
                },
                {
                    "name": "eta_end",
                    "type": "string",
                    "title": {
-                       "en": "eta_end"
+                       "en": "eta end"
                    },
-                   "example": "2018-09-03T21:05:00.000+02:00"
+                   "example": "21:05"
+               },
+               {
+                   "name": "eta_date",
+                   "type": "string",
+                   "title": {
+                       "en": "eta date"
+                   },
+                   "example": "2018-09-03"
                }
            ]
         },
@@ -93,17 +102,25 @@
                    "name": "eta_start",
                    "type": "string",
                    "title": {
-                       "en": "eta_start"
+                       "en": "eta begin"
                    },
-                   "example": "2018-09-03T20:25:00.000+02:00"
+                   "example": "20:25"
                },
                {
                    "name": "eta_end",
                    "type": "string",
                    "title": {
-                       "en": "eta_end"
+                       "en": "eta end"
                    },
-                   "example": "2018-09-03T20:45:00.000+02:00"
+                   "example": "20:45"
+               },
+               {
+                   "name": "eta_date",
+                   "type": "string",
+                   "title": {
+                       "en": "eta date"
+                   },
+                   "example": "2018-09-03"
                }
            ]
         },
@@ -112,7 +129,27 @@
             "title": {
                 "en": "Groceries have been delivered",
                 "nl": "Boodschappen zijn bezorgd"
-            }
+            },
+            "tokens": [
+               {
+                   "name": "delivery_time",
+                   "type": "string",
+                   "title": {
+                       "en": "delivery time",
+                       "nl": "aflevertijd"
+                   },
+                   "example": "20:45"
+               },
+               {
+                   "name": "delivery_date",
+                   "type": "string",
+                   "title": {
+                       "en": "eta_date",
+                       "nl": "afleverdatum"
+                   },
+                   "example": "2018-09-03"
+               }
+           ]
         }
     ]
   },
