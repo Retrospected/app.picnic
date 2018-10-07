@@ -2,10 +2,10 @@
     "title": "Picnic",
     "settings": {
         "title": "Picnic",
-        "subtitle": "Log on to Picnic with your username and password and retrieve the authorisation token.",
+        "subtitle": "Log on to Picnic with your username and password.",
         "username": "Username",
         "password": "Password",
-        "secret": "Authorisation token"
+        "authenticated": "Authentication status"
     },
     "speech": {
         "which_product": "Which product would you like to add?",

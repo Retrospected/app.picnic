@@ -1,62 +1,76 @@
 <!doctype html>
 <html>
-    <head>
-        <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+<head>
+  <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
 
-    </head>
-    <body>
+</head>
+<body>
 
-        <h1 data-i18n="settings.title">
-        </h1>
-        <p data-i18n="settings.subtitle"/>
+  <h1 data-i18n="settings.title">
+  </h1>
+  <p data-i18n="settings.subtitle"/>
 
-        <fieldset>
-            <legend>Settings</legend>
+  <fieldset>
+    <legend>Settings</legend>
 
-            <div class="field row">
-                <label for="username" data-i18n="settings.username">:</label>
-                <input id="username" type="text" value="" />
-            </div>
-            <div class="field row">
-                <label for="password" data-i18n="settings.password">:</label>
-                <input id="password" type="password" value="" />
-            </div>
+    <div class="field row">
+      <label for="username" data-i18n="settings.username">:</label>
+      <input id="username" type="text" value="" />
+    </div>
+    <div class="field row">
+      <label for="password" data-i18n="settings.password">:</label>
+      <input id="password" type="password" value="" />
+    </div>
+    <div class="field row">
+      <label for="authenticated" data-i18n="settings.authenticated">: </label><var id="status">loading...</var>
+    </div>
 
-            <div class="field row">
-                <label for="secret" data-i18n="settings.secret"/>:</label>
-                <input id="secret" type="text" value="" readonly/>
-            </div>
 
-        </fieldset>
+  </fieldset>
 
-        <button id="save" class="right">Save changes</button>
+  <button id="save" class="right">Save changes</button>
 
-        <script type="text/javascript">
+  <script type="text/javascript">
 
-        function onHomeyReady( Homey ){
+  function onHomeyReady( Homey ){
 
-            Homey.ready();
+    Homey.ready();
 
-            var usernameElement = document.getElementById('username');
-            var passwordElement = document.getElementById('password');
-            var secretElement = document.getElementById('secret');
-            var saveElement = document.getElementById('save');
+    var usernameElement = document.getElementById('username');
+    var passwordElement = document.getElementById('password');
+    var saveElement = document.getElementById('save');
+    var statusElement = document.getElementById('status');
 
-            Homey.get('x-picnic-auth', function( err, secret ) {
-               if( err ) return Homey.alert( err );
-               secretElement.value = secret;
-            });
+    Homey.api('GET', '/status', null, function ( err, result ) {
+      if ( err ) return Homey.alert( err );
+      if (result == "OK") {
+        statusElement.style.color = "green";
+      }
+      else if (result == "NOT OK" ) {
+        statusElement.style.color = "red";
+      }
+      statusElement.innerHTML = result;
+    });
 
-            saveElement.addEventListener('click', function(e) {
+    Homey.get('username', function( err, username ) {
+      if( err ) return Homey.alert( err );
+      usernameElement.value = username;
+    });
 
-              Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
-                if( err ) return Homey.alert(err);
-                window.location.reload();
-              });
+    saveElement.addEventListener('click', function(e) {
 
-            });
-        }
-        </script>
+      Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
+        if( err ) return Homey.alert(err);
 
-    </body>
+        Homey.set('username', usernameElement.value)
+        Homey.set('password', passwordElement.value)
+
+        window.location.reload();
+      });
+
+    });
+  }
+  </script>
+
+</body>
 </html>

@@ -12,65 +12,70 @@ const POLL_INTERVAL = 1000 * 60 * 5 //5min
 
 class Picnic extends Homey.App {
 
-		onInit() {
-			this.log('Picnic is running...');
-			flowSpeech.init()
-			flowAction.init()
+	onInit() {
+		this.log('Picnic is running...');
+		flowSpeech.init()
+		flowAction.init()
 
-			if (Homey.ManagerSettings.getKeys().indexOf("order_status") == -1) {
-				Homey.ManagerSettings.set("order_status", null)
-			}
+		if (Homey.ManagerSettings.getKeys().indexOf("order_status") == -1) {
+			Homey.ManagerSettings.set("order_status", null)
+		}
 
-			this._groceriesOrderedTrigger = new Homey.FlowCardTrigger('groceries_ordered').register()
-			this._deliveryAnnouncedTrigger = new Homey.FlowCardTrigger('delivery_announced').register()
-			this._groceriesDelivered = new Homey.FlowCardTrigger('groceries_delivered').register()
+		this._pollOrderInterval = setInterval(this.pollOrder.bind(this), POLL_INTERVAL);
+		this.pollOrder();
 
-			this._pollOrderInterval = setInterval(this.pollOrder.bind(this), POLL_INTERVAL);
-			this.pollOrder();
+		this._groceriesOrderedTrigger = new Homey.FlowCardTrigger('groceries_ordered').register()
+		this._deliveryAnnouncedTrigger = new Homey.FlowCardTrigger('delivery_announced').register()
+		this._groceriesDelivered = new Homey.FlowCardTrigger('groceries_delivered').register()
 	}
 
 	pollOrder() {
-		//Would be better to check if the logon session works, but instead just see if the x-picnic-auth key is configured
-		if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") > -1) {
+		if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") > -1 && Homey.ManagerSettings.getKeys().indexOf("username") > -1 && Homey.ManagerSettings.getKeys().indexOf("password") > -1) {
 
 			flowTrigger.getOrderStatus( function(orderEvent) {
-				if ( orderEvent instanceof Error ) { return Promise.reject(new Error('Status could not be retrieved.')); }
-
-				if (orderEvent["event"] == 'groceries_ordered') {
-
-					var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-					var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-					var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
-
-					let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
-					Homey.app._groceriesOrderedTrigger.trigger(data)
+				if ( orderEvent.toString() == "Error: unauthorized" ) {
+					Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callBack) {
+					return Promise.reject(new Error('Re-authentication failed.'));
+					});
 				}
-				else if (orderEvent["event"] == 'delivery_announced') {
+				else if ( orderEvent instanceof Error ) { return Promise.reject(new Error('Status could not be retrieved.')); }
+				else {
+					if (orderEvent["event"] == 'groceries_ordered') {
 
-					var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-					var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-					var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+						var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+						var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+						var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
-					let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
-					Homey.app._deliveryAnnouncedTrigger.trigger(eta)
-				}
-				else if (orderEvent["event"] == 'groceries_delivered') {
+						let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
+						Homey.app._groceriesOrderedTrigger.trigger(data)
+					}
+					else if (orderEvent["event"] == 'delivery_announced') {
 
-					var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-					var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+						var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+						var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+						var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
-					let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
+						let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
+						Homey.app._deliveryAnnouncedTrigger.trigger(eta)
+					}
+					else if (orderEvent["event"] == 'groceries_delivered') {
 
-					Homey.app._groceriesDelivered.trigger(delivery)
+						var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+						var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+
+						let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
+
+						Homey.app._groceriesDelivered.trigger(delivery)
+					}
 				}
 			})
 		}
 	}
 
-	login(args, callback) {
+	login(username, password, callback) {
 		var post_data = {
-			key: args.body.username,
-			secret: md5(args.body.password),
+			key: username,
+			secret: md5(password),
 			client_id: 1
 		};
 
@@ -98,13 +103,43 @@ class Picnic extends Homey.App {
 			else {
 				return callback(new Error('Problem with request or authentication failed.'));
 			}
+		});
 
-			req.on('error', (e) => {
-				return callback(new Error('Problem with request or authentication failed.'));
-			});
+		req.on('error', (e) => {
+			return callback(new Error('Problem with request or authentication failed.'));
 		});
 
 		req.write(json_data);
+		req.end();
+	}
+
+	status (callback) {
+		var options = {
+			hostname: 'storefront-prod.nl.picnicinternational.com',
+			port: 443,
+			path: '/api/14/cart',
+			method: 'GET',
+			timeout: 1000,
+			headers: {
+				"User-Agent": "okhttp/3.9.0",
+				"Content-Type": "application/json; charset=UTF-8",
+				"x-picnic-auth": Homey.ManagerSettings.get("x-picnic-auth")
+			}
+		}
+
+		const req = http.request(options, function (res) {
+			if (res.statusCode == 200) {
+				return callback ("OK");
+			}
+			else {
+				return callback("NOT OK");
+			}
+		});
+
+		req.on('error', function (e) {
+			return callback("NOT OK");
+		});
+
 		req.end();
 	}
 }
