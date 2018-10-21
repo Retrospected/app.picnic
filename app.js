@@ -21,6 +21,7 @@ class Picnic extends Homey.App {
 			Homey.ManagerSettings.set("order_status", null)
 		}
 
+
 		this._pollOrderInterval = setInterval(this.pollOrder.bind(this), POLL_INTERVAL);
 		this.pollOrder();
 
@@ -34,14 +35,19 @@ class Picnic extends Homey.App {
 
 			flowTrigger.getOrderStatus( function(orderEvent) {
 				if ( orderEvent.toString() == "Error: unauthorized" ) {
+					Homey.app.log("Error: unauthorized, please check your credentials")
 					Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callBack) {
 					return Promise.reject(new Error('Re-authentication failed.'));
 					});
 				}
-				else if ( orderEvent instanceof Error ) { return Promise.reject(new Error('Status could not be retrieved.')); }
+				else if ( orderEvent instanceof Error ) {
+					Homey.app.log("Order retrieving failed, connectivity issues?")
+					return Promise.reject(new Error('Status could not be retrieved.'));
+				}
 				else {
+					Homey.app.log("Order data succesfully retrieved")
 					if (orderEvent["event"] == 'groceries_ordered') {
-
+						Homey.app.log("Order changed to groceries_ordered, firing trigger")
 						var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 						var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 						var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
@@ -50,7 +56,7 @@ class Picnic extends Homey.App {
 						Homey.app._groceriesOrderedTrigger.trigger(data)
 					}
 					else if (orderEvent["event"] == 'delivery_announced') {
-
+						Homey.app.log("Order changed to delivery_announced, firing trigger")
 						var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 						var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 						var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
@@ -59,7 +65,7 @@ class Picnic extends Homey.App {
 						Homey.app._deliveryAnnouncedTrigger.trigger(eta)
 					}
 					else if (orderEvent["event"] == 'groceries_delivered') {
-
+						Homey.app.log("Order changed to groceries_delivered, firing trigger")
 						var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 						var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
@@ -97,7 +103,8 @@ class Picnic extends Homey.App {
 		const req = http.request(options, (res) => {
 			if (res.statusCode == 200) {
 				Homey.ManagerSettings.set("x-picnic-auth", res.headers['x-picnic-auth'])
-
+				Homey.ManagerSettings.set("username", username)
+				Homey.ManagerSettings.set("password", password)
 				return callback(null, "success")
 			}
 			else {
