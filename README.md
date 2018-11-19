@@ -34,7 +34,7 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
-### 1.4.0
+### 1.4.1
 
 - Bugfix: Catching any errors during periodic polling of the order status.
 
