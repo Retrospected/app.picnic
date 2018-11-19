@@ -34,10 +34,9 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
-### 1.4.0
-<b>Note that after this update you will have to re-authenticate via the Picnic app settings.</b>
+### 1.4.1
 
-- Bugfix: Fixing bug to store credentials to the settings
+- Bugfix: Catching any errors during periodic polling of the order status.
 
 ## TODO
 - Add speech command to remove last added product by Homey

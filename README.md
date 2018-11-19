@@ -35,6 +35,10 @@ Adding a product to your basket based on the name of the product passed as an ar
 ## CHANGELOG
 
 ### 1.4.0
+
+- Bugfix: Catching any errors during periodic polling of the order status.
+
+### 1.4.0
 <b>Note that after this update you will have to re-authenticate via the Picnic app settings.</b>
 
 - Bugfix: Fixing bug to store credentials to the settings
