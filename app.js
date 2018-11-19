@@ -31,50 +31,55 @@ class Picnic extends Homey.App {
 	}
 
 	pollOrder() {
-		if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") > -1 && Homey.ManagerSettings.getKeys().indexOf("username") > -1 && Homey.ManagerSettings.getKeys().indexOf("password") > -1) {
+		try {
+			if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") > -1 && Homey.ManagerSettings.getKeys().indexOf("username") > -1 && Homey.ManagerSettings.getKeys().indexOf("password") > -1) {
 
-			flowTrigger.getOrderStatus( function(orderEvent) {
-				if ( orderEvent.toString() == "Error: unauthorized" ) {
-					Homey.app.log("Error: unauthorized, please check your credentials")
-					Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callBack) {
-					return Promise.reject(new Error('Re-authentication failed.'));
-					});
-				}
-				else if ( orderEvent instanceof Error ) {
-					Homey.app.log("Order retrieving failed, connectivity issues?")
-					return Promise.reject(new Error('Status could not be retrieved.'));
-				}
-				else {
-					Homey.app.log("Order data succesfully retrieved")
-					if (orderEvent["event"] == 'groceries_ordered') {
-						Homey.app.log("Order changed to groceries_ordered, firing trigger")
-						var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-						var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-						var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
-
-						let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
-						Homey.app._groceriesOrderedTrigger.trigger(data)
+				flowTrigger.getOrderStatus( function(orderEvent) {
+					if ( orderEvent.toString() == "Error: unauthorized" ) {
+						Homey.app.log("Error: unauthorized, please check your credentials")
+						Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callBack) {
+							return Promise.reject(new Error('Re-authentication failed.'));
+						});
 					}
-					else if (orderEvent["event"] == 'delivery_announced') {
-						Homey.app.log("Order changed to delivery_announced, firing trigger")
-						var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-						var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-						var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
-
-						let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
-						Homey.app._deliveryAnnouncedTrigger.trigger(eta)
+					else if ( orderEvent instanceof Error ) {
+						Homey.app.log("Order retrieving failed, connectivity issues?")
+						return Promise.reject(new Error('Status could not be retrieved.'));
 					}
-					else if (orderEvent["event"] == 'groceries_delivered') {
-						Homey.app.log("Order changed to groceries_delivered, firing trigger")
-						var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-						var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+					else {
+						Homey.app.log("Order data succesfully retrieved")
+						if (orderEvent["event"] == 'groceries_ordered') {
+							Homey.app.log("Order changed to groceries_ordered, firing trigger")
+							var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
-						let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
+							let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
+							Homey.app._groceriesOrderedTrigger.trigger(data)
+						}
+						else if (orderEvent["event"] == 'delivery_announced') {
+							Homey.app.log("Order changed to delivery_announced, firing trigger")
+							var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
-						Homey.app._groceriesDelivered.trigger(delivery)
+							let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
+							Homey.app._deliveryAnnouncedTrigger.trigger(eta)
+						}
+						else if (orderEvent["event"] == 'groceries_delivered') {
+							Homey.app.log("Order changed to groceries_delivered, firing trigger")
+							var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
+
+							let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
+
+							Homey.app._groceriesDelivered.trigger(delivery)
+						}
 					}
-				}
-			})
+				})
+			}
+		}
+		catch (err) {
+			Homey.app.log("Unexpected error occured: "+err)
 		}
 	}
 
