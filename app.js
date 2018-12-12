@@ -31,10 +31,11 @@ class Picnic extends Homey.App {
 	}
 
 	pollOrder() {
-		try {
+		return new Promise((resolve, reject) => {
+			Homey.app.log("Polling for new order info")
 			if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") > -1 && Homey.ManagerSettings.getKeys().indexOf("username") > -1 && Homey.ManagerSettings.getKeys().indexOf("password") > -1) {
-
-				flowTrigger.getOrderStatus( function(orderEvent) {
+				flowTrigger.getOrderStatus().then(orderEvent => {
+					Homey.app.log("Processing order info")
 					if ( orderEvent.toString() == "Error: unauthorized" ) {
 						Homey.app.log("Error: unauthorized, please check your credentials")
 						Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callBack) {
@@ -76,11 +77,12 @@ class Picnic extends Homey.App {
 						}
 					}
 				})
+				.catch (error => {
+					Homey.app.log('Error: '+error)
+					return Promise.reject(new Error('Order polling failed.'))
+				});
 			}
-		}
-		catch (err) {
-			Homey.app.log("Unexpected error occured: "+err)
-		}
+		});
 	}
 
 	login(username, password, callback) {
