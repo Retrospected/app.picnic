@@ -34,9 +34,9 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
-### 1.4.1
+### 1.4.2
 
-- Bugfix: Catching any errors during periodic polling of the order status.
+- Bugfix: Checking if the order status response actually contains content that can be parsed.
 
 ## TODO
 - Add speech command to remove last added product by Homey

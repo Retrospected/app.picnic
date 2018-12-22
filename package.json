@@ -1,6 +1,6 @@
 {
   "name": "app.picnic",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Doing your groceries at Picnic via Homey.",
   "dependencies": {
     "http": "^0.0.0",
