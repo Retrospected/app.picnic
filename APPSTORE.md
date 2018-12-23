@@ -34,9 +34,9 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
-### 1.4.2
+### 1.4.3
 
-- Bugfix: Checking if the order status response actually contains content that can be parsed.
+- Bugfix: Picnic uses a server-side lock when items are being added to your cart. This caused an issue when running a flow that adds multiple items to your cart at the same time. Fixing this bug in 1.4.3 by using a threat lock stored in the app's ManagerSettings.
 
 ## TODO
 - Add speech command to remove last added product by Homey
