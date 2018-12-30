@@ -134,17 +134,4 @@ angular.module('picnicApp', ['smart-table'])
             if (recipy.name === rm.selected.name) return 'edit';
             else return 'display';
         };
-
-        // function Recipy(recipies, recipy) {
-        //     var changeObject = {
-        //         recipies: recipies,
-        //         recipy: recipy
-        //     };
-        //
-        //     //rm.homey.set('changedRecipies', changeObject);
-        //     rm.homey.api('POST', '/addRecipy', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
-        //     if( err ) return Homey.alert(err);
-        //
-        //     });
-        // }
     });
