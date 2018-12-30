@@ -1,7 +1,11 @@
 <!doctype html>
-<html>
+<html ng-app="picnicApp">
 <head>
   <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  <link rel="stylesheet" type="text/css" href="bootstrap.css" />
+  <script type="text/javascript" src="/manager/webserver/assets/js/angular.js"></script>
+  <script type="text/javascript" src="smart-table.min.js"></script>
+  <script type="text/javascript" src="recipyController.js"></script>
 
 </head>
 <body>
@@ -29,12 +33,115 @@
   </fieldset>
 
   <button id="save" class="right">Save changes</button>
+  <div class="form-group">
+  <body ng-controller="RecipySettingsController as rm">
+    <h2>Recipies management</h2>
+    <p>Be aware that removing recipies could corrupt flows that are using that variable.</p>
+    <div >
+        <div class="panel panel-default">
+            <div class="panel-heading">Add recipy</div>
+            <div class="panel-body">
+                <form role="form">
+                    <div class="form-group">
+                        <label for="recipyName">Recipy name</label>
+                        <input class="form-control" id="recipyName" type="text" ng-model="rm.newRecipy.name" placeholder="Name"><span class="error">{{rm.errorMessage}}</span>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default" type="button" ng-disabled="!rm.newRecipy.name" ng-click="rm.addRecipy()">Add recipy</button>
+                        <button class="btn btn-default" type="button" ng-click="rm.showExport()">Export</button>
+                        <button class="btn btn-default" type="button" ng-click="rm.showImport()">Import</button>
+                        <button class="btn btn-default" type="button" ng-click="rm.deleteAll()">Delete All</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div ng-show="rm.showExportToggle">
+            <b>Exported values:</b><br />
+            Copy selection below to save your configuration offline.
+            <p>
+                <textarea rows="6" cols="60">{{rm.recipies | json}}</textarea>
+            </p>
+        </div>
+        <div ng-show="rm.showImportToggle">
+            <b>Import values:</b><br />
+            Paste in the box below the exported values. Be aware that all existing values and insights will be removed.
+            <p>
+                <textarea rows="6" cols="60" ng-Model="rm.importJson"></textarea>
+                <div class="form-group">
+                    <button class="btn btn-default" type="button" ng-click="rm.import()">Import</button>
+                </div>
+            </p>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">Add ingredients to recipy</div>
+            <div class="panel-body">
+                <form role="form">
+                  <div class="form-group">
+                  <label>Recipy</label>
+                  <select id=selectedRecipy>
+                    <option ng-repeat="recipy in rm.recipies">
+                      {{recipy.name}}
+                    </option>
+                  </select>
+                </div>
+                    <div class="form-group">
+                        <label for="recipyName">Ingredient</label>
+                        <input class="form-control" id="ingredientName" type="text" ng-model="rm.newIngredient.name" placeholder="Name">
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-default" type="button" ng-click="rm.addIngredient()">Add ingredient</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <table st-safe-src="rm.recipies" st-table="displayedCollection" class="table table-striped">
+            <thead>
+                <tr>
+                    <th st-sort="name">Recipy</th>
+                    <th st-sort="ingredients">Ingredients (name it as precise as possible!)</th>
+                    <th></th>
+                </tr>
+                <tr>
+                    <th>
+                        <input st-search="name" placeholder="search for recipy" class="input-sm form-control" type="search" />
+                    </th>
+                    <th>
+                    </th>
+                    <th>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="recipy in displayedCollection" ng-include="rm.getTemplate(recipy)"></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="text/ng-template" id="display">
+        <td>{{recipy.name}}</td>
+        <td>
+          <select>
+           <option ng-repeat="ingredientItem in recipy.ingredients">
+             {{ingredientItem}}
+           </option>
+          </select>
+        </td>
+        <td>
+            <button ng-click="rm.removeRecipy(recipy)">Delete recipy</button>
+        </td>
+    </script>
+
+
 
   <script type="text/javascript">
 
   function onHomeyReady( Homey ){
 
     Homey.ready();
+    var scope = angular.element(document.getElementById('recipyName')).scope();
+    scope.$apply(function() {
+      scope.rm.setHomey(Homey, scope);
+    });
 
     var usernameElement = document.getElementById('username');
     var passwordElement = document.getElementById('password');
@@ -73,4 +180,5 @@
   </script>
 
 </body>
+</div>
 </html>

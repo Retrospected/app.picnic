@@ -34,6 +34,10 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
+### 1.5.0
+
+- Feature: Adding recipy management
+
 ### 1.4.4
 
 - Bugfix: Adding exception handler when no products are found

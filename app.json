@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "compatibility": ">=1.5.0",
   "sdk": 2,
   "name": {
@@ -46,6 +46,30 @@
             }
           }
         ]
+      },
+      {
+        "id": "add_recipy",
+        "title": {
+          "en": "Add a recipy",
+          "nl": "Voeg recept toe"
+        },
+        "args":[
+          {
+            "name":"recipy",
+            "type":"autocomplete",
+            "placeholder":{
+              "en":"recipy",
+              "nl":"recept"
+            }
+          }
+        ]
+      },
+      {
+        "id": "add_random_recipy",
+        "title": {
+          "en": "Add a random recipy",
+          "nl": "Voeg willekeurig recept toe"
+        }
       }
     ],
     "triggers": [

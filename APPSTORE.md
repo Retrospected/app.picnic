@@ -34,10 +34,9 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
-### 1.4.4
+### 1.5.0
 
-- Bugfix: Adding exception handler when no products are found
-- Bugfix: Encoding products including non-ASCII characters
+- Feature: Adding recipy management
 
 ## TODO
 - Add speech command to remove last added product by Homey
