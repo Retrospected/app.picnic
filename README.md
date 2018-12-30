@@ -34,6 +34,11 @@ Adding a product to your basket based on the name of the product passed as an ar
 
 ## CHANGELOG
 
+### 1.4.4
+
+- Bugfix: Adding exception handler when no products are found
+- Bugfix: Encoding products including non-ASCII characters
+
 ### 1.4.3
 
 - Bugfix: Picnic uses a server-side lock when items are being added to your cart. This caused an issue when running a flow that adds multiple items to your cart at the same time. Fixing this bug in 1.4.3 by using a threat lock stored in the app's ManagerSettings.
