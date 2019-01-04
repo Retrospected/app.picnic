@@ -1,5 +1,5 @@
 angular.module('picnicApp', ['smart-table'])
-    .controller('RecipySettingsController', function($scope) {
+    .controller('RecipeSettingsController', function($scope) {
         var rm = this;
         rm.errorMessage = '';
         rm.showExportToggle = false;
@@ -30,10 +30,10 @@ angular.module('picnicApp', ['smart-table'])
             });
         }
         rm.addIngredient = function() {
-          var e = document.getElementById("selectedRecipy");
-          var selectedRecipy = e.options[e.selectedIndex].text;
+          var e = document.getElementById("selectedRecipe");
+          var selectedRecipe = e.options[e.selectedIndex].text;
           rm.recipies.forEach(function(item, index, arr) {
-            if (item.name === selectedRecipy) {
+            if (item.name === selectedRecipe) {
 
               rm.recipies[index]["ingredients"].push(rm.newIngredient.name);
             }
@@ -49,13 +49,13 @@ angular.module('picnicApp', ['smart-table'])
           });
         }
 
-        rm.addRecipy = function() {
-            if (rm.recipies && rm.newRecipy.name in rm.recipies) {
-                rm.errorMessage = "Recipy does already exist in database.";
+        rm.addRecipe = function() {
+            if (rm.recipies && rm.newRecipe.name in rm.recipies) {
+                rm.errorMessage = "Recipe does already exist in database.";
                 return;
             }
             rm.recipies.push({
-              name: rm.newRecipy.name,
+              name: rm.newRecipe.name,
               ingredients: []
             })
 
@@ -65,22 +65,22 @@ angular.module('picnicApp', ['smart-table'])
               }
               else {
                 rm.errorMessage = '';
-                var e = document.getElementById("selectedRecipy");
-                e.options[e.selectedIndex].text = rm.newRecipy.name;
-                document.getElementById("recipyName").value = '';
+                var e = document.getElementById("selectedRecipe");
+                e.options[e.selectedIndex].text = rm.newRecipe.name;
+                document.getElementById("recipeName").value = '';
               }
             });
-            rm.Recipy = {};
+            rm.Recipe = {};
         };
         rm.deleteAll = function() {
             rm.recipies = [];
             rm.homey.set('recipies', rm.recipies);
 
         }
-        rm.removeRecipy = function(row) {
+        rm.removeRecipe = function(row) {
           var index = rm.recipies.indexOf(row);
-          var toDeleteRecipy = rm.recipies[index];
-          toDeleteRecipy.remove = true;
+          var toDeleteRecipe = rm.recipies[index];
+          toDeleteRecipe.remove = true;
           rm.recipies.splice(index, 1);
           rm.homey.set('recipies', angular.copy(rm.recipies));
         };
@@ -99,16 +99,16 @@ angular.module('picnicApp', ['smart-table'])
             rm.recipies = newRecipies;
         };
 
-        rm.editRecipy = function(recipy) {
-            rm.selected = angular.copy(recipy);
+        rm.editRecipe = function(recipe) {
+            rm.selected = angular.copy(recipe);
         };
 
-        rm.saveRecipy = function(row) {
+        rm.saveRecipe = function(row) {
             var index = rm.recipies.indexOf(row);
             var indexDisplay = $scope.displayedCollection.indexOf(row);
             rm.recipies[index] = angular.copy(rm.selected);
             $scope.displayedCollection[indexDisplay] = angular.copy(rm.selected);
-            storeRecipy(angular.copy(rm.recipies), rm.selected);
+            storeRecipe(angular.copy(rm.recipies), rm.selected);
             rm.reset();
         };
 
@@ -119,19 +119,19 @@ angular.module('picnicApp', ['smart-table'])
 
         rm.selectUpdate = function(type) {
             if (type === 'boolean') {
-                rm.newRecipy.value = false;
+                rm.newRecipe.value = false;
                 return;
             }
             if (type === 'number') {
-                rm.newRecipy.value = 0;
+                rm.newRecipe.value = 0;
                 return;
             }
-            rm.newRecipy.value = '';
+            rm.newRecipe.value = '';
             return;
         }
 
-        rm.getTemplate = function(recipy) {
-            if (recipy.name === rm.selected.name) return 'edit';
+        rm.getTemplate = function(recipe) {
+            if (recipe.name === rm.selected.name) return 'edit';
             else return 'display';
         };
     });

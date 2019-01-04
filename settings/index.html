@@ -5,7 +5,7 @@
   <link rel="stylesheet" type="text/css" href="bootstrap.css" />
   <script type="text/javascript" src="/manager/webserver/assets/js/angular.js"></script>
   <script type="text/javascript" src="smart-table.min.js"></script>
-  <script type="text/javascript" src="recipyController.js"></script>
+  <script type="text/javascript" src="recipeController.js"></script>
 
 </head>
 <body>
@@ -34,20 +34,20 @@
 
   <button id="save" class="right">Save changes</button>
   <div class="form-group">
-  <body ng-controller="RecipySettingsController as rm">
-    <h2>Recipies management</h2>
+  <body ng-controller="RecipeSettingsController as rm">
+    <h2>Recipies</h2>
     <p>Be aware that removing recipies could corrupt flows that are using that variable.</p>
     <div >
         <div class="panel panel-default">
-            <div class="panel-heading">Add recipy</div>
+            <div class="panel-heading">Add recipe</div>
             <div class="panel-body">
                 <form role="form">
                     <div class="form-group">
-                        <label for="recipyName">Recipy name</label>
-                        <input class="form-control" id="recipyName" type="text" ng-model="rm.newRecipy.name" placeholder="Name"><span class="error">{{rm.errorMessage}}</span>
+                        <label for="recipeName">Recipe name</label>
+                        <input class="form-control" id="recipeName" type="text" ng-model="rm.newRecipe.name" placeholder="Name"><span class="error">{{rm.errorMessage}}</span>
                     </div>
                     <div class="form-group">
-                        <button class="btn btn-default" type="button" ng-disabled="!rm.newRecipy.name" ng-click="rm.addRecipy()">Add recipy</button>
+                        <button class="btn btn-default" type="button" ng-disabled="!rm.newRecipe.name" ng-click="rm.addRecipe()">Add recipe</button>
                         <button class="btn btn-default" type="button" ng-click="rm.showExport()">Export</button>
                         <button class="btn btn-default" type="button" ng-click="rm.showImport()">Import</button>
                         <button class="btn btn-default" type="button" ng-click="rm.deleteAll()">Delete All</button>
@@ -73,19 +73,19 @@
             </p>
         </div>
         <div class="panel panel-default">
-            <div class="panel-heading">Add ingredients to recipy</div>
+            <div class="panel-heading">Add ingredients to recipe</div>
             <div class="panel-body">
                 <form role="form">
                   <div class="form-group">
-                  <label>Recipy</label>
-                  <select id=selectedRecipy>
-                    <option ng-repeat="recipy in rm.recipies">
-                      {{recipy.name}}
+                  <label>Recipe</label>
+                  <select id=selectedRecipe>
+                    <option ng-repeat="recipe in rm.recipies">
+                      {{recipe.name}}
                     </option>
                   </select>
                 </div>
                     <div class="form-group">
-                        <label for="recipyName">Ingredient</label>
+                        <label for="recipeName">Ingredient</label>
                         <input class="form-control" id="ingredientName" type="text" ng-model="rm.newIngredient.name" placeholder="Name">
                     </div>
                     <div class="form-group">
@@ -97,13 +97,13 @@
         <table st-safe-src="rm.recipies" st-table="displayedCollection" class="table table-striped">
             <thead>
                 <tr>
-                    <th st-sort="name">Recipy</th>
+                    <th st-sort="name">Recipe</th>
                     <th st-sort="ingredients">Ingredients (name it as precise as possible!)</th>
                     <th></th>
                 </tr>
                 <tr>
                     <th>
-                        <input st-search="name" placeholder="search for recipy" class="input-sm form-control" type="search" />
+                        <input st-search="name" placeholder="search for recipe" class="input-sm form-control" type="search" />
                     </th>
                     <th>
                     </th>
@@ -112,22 +112,22 @@
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="recipy in displayedCollection" ng-include="rm.getTemplate(recipy)"></tr>
+                <tr ng-repeat="recipe in displayedCollection" ng-include="rm.getTemplate(recipe)"></tr>
             </tbody>
         </table>
     </div>
 
     <script type="text/ng-template" id="display">
-        <td>{{recipy.name}}</td>
+        <td>{{recipe.name}}</td>
         <td>
           <select>
-           <option ng-repeat="ingredientItem in recipy.ingredients">
+           <option ng-repeat="ingredientItem in recipe.ingredients">
              {{ingredientItem}}
            </option>
           </select>
         </td>
         <td>
-            <button ng-click="rm.removeRecipy(recipy)">Delete recipy</button>
+            <button ng-click="rm.removeRecipe(recipe)">Delete recipe</button>
         </td>
     </script>
 
@@ -138,7 +138,7 @@
   function onHomeyReady( Homey ){
 
     Homey.ready();
-    var scope = angular.element(document.getElementById('recipyName')).scope();
+    var scope = angular.element(document.getElementById('recipeName')).scope();
     scope.$apply(function() {
       scope.rm.setHomey(Homey, scope);
     });
