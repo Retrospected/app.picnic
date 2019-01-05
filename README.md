@@ -19,7 +19,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
   - delivery time
 
 ## Flow Actions:
-Adding a product to your basket based on the name of the product passed as an argument.
+- Adding a product to your basket based on the name of the product passed as an argument.
+- Adding products based on a recipe as configured via the settings page.
+- Adding products based on a randomly picked recipe.
 
 ### Speech triggers:
 ##### English
@@ -33,6 +35,10 @@ Adding a product to your basket based on the name of the product passed as an ar
 <b>Argument:</b> 'naam van het product'
 
 ## CHANGELOG
+
+### 1.5.1
+
+- Bugfix: fixing minor issues
 
 ### 1.5.0
 
