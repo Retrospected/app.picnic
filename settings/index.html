@@ -14,69 +14,75 @@
   </h1>
   <p data-i18n="settings.subtitle"/>
 
-  <fieldset>
-    <legend>Settings</legend>
-
-    <div class="field row">
-      <label for="username" data-i18n="settings.username">:</label>
-      <input id="username" type="text" value="" />
-    </div>
-    <div class="field row">
-      <label for="password" data-i18n="settings.password">:</label>
-      <input id="password" type="password" value="" />
-    </div>
-    <div class="field row">
-      <label for="authenticated" data-i18n="settings.authenticated">: </label><var id="status">loading...</var>
-    </div>
-
-
-  </fieldset>
-
-  <button id="save" class="right">Save changes</button>
   <div class="form-group">
-  <body ng-controller="RecipeSettingsController as rm">
-    <h2>Recipies</h2>
-    <p>Be aware that removing recipies could corrupt flows that are using that variable.</p>
-    <div >
-        <div class="panel panel-default">
+    <h2>Settings</h2>
+    <div>
+      <div class="panel panel-default">
+        <div class="panel-heading">Account</div>
+        <div class="panel-body">
+          <form role="form">
+            <div class="form-group">
+              <label for="username" data-i18n="settings.username">:</label>
+              <input class="form-control" id="username" type="text" value="" />
+            </div>
+            <div class="form-group">
+              <label for="password" data-i18n="settings.password">:</label>
+              <input id="password" type="password" value="" />
+            </div>
+            <div class="form-group">
+              <label for="authenticated" data-i18n="settings.authenticated">:</label>
+              <div><var id="status">loading...</var></div>
+            </div>
+          </form>
+          <button id="save" class="right">Save changes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <body ng-controller="RecipeSettingsController as rm">
+        <h2>Recipies</h2>
+        <p>Be aware that removing recipies could corrupt flows that are using that variable.</p>
+        <div >
+          <div class="panel panel-default">
             <div class="panel-heading">Add recipe</div>
             <div class="panel-body">
-                <form role="form">
-                    <div class="form-group">
-                        <label for="recipeName">Recipe name</label>
-                        <input class="form-control" id="recipeName" type="text" ng-model="rm.newRecipe.name" placeholder="Name"><span class="error">{{rm.errorMessage}}</span>
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-default" type="button" ng-disabled="!rm.newRecipe.name" ng-click="rm.addRecipe()">Add recipe</button>
-                        <button class="btn btn-default" type="button" ng-click="rm.showExport()">Export</button>
-                        <button class="btn btn-default" type="button" ng-click="rm.showImport()">Import</button>
-                        <button class="btn btn-default" type="button" ng-click="rm.deleteAll()">Delete All</button>
-                    </div>
-                </form>
+              <form role="form">
+                <div class="form-group">
+                  <label for="recipeName">Recipe name</label>
+                  <input class="form-control" id="recipeName" type="text" ng-model="rm.newRecipe.name" placeholder="Name"><span class="error">{{rm.errorMessage}}</span>
+                </div>
+                <div class="form-group">
+                  <button class="btn btn-default" type="button" ng-disabled="!rm.newRecipe.name" ng-click="rm.addRecipe()">Add recipe</button>
+                  <button class="btn btn-default" type="button" ng-click="rm.showExport()">Export</button>
+                  <button class="btn btn-default" type="button" ng-click="rm.showImport()">Import</button>
+                  <button class="btn btn-default" type="button" ng-click="rm.deleteAll()">Delete All</button>
+                </div>
+              </form>
             </div>
-        </div>
-        <div ng-show="rm.showExportToggle">
+          </div>
+          <div ng-show="rm.showExportToggle">
             <b>Exported values:</b><br />
             Copy selection below to save your configuration offline.
             <p>
-                <textarea rows="6" cols="60">{{rm.recipies | json}}</textarea>
+              <textarea rows="6" cols="60">{{rm.recipies | json}}</textarea>
             </p>
-        </div>
-        <div ng-show="rm.showImportToggle">
+          </div>
+          <div ng-show="rm.showImportToggle">
             <b>Import values:</b><br />
             Paste in the box below the exported values. Be aware that all existing values and insights will be removed.
             <p>
-                <textarea rows="6" cols="60" ng-Model="rm.importJson"></textarea>
-                <div class="form-group">
-                    <button class="btn btn-default" type="button" ng-click="rm.import()">Import</button>
-                </div>
+              <textarea rows="6" cols="60" ng-Model="rm.importJson"></textarea>
+              <div class="form-group">
+                <button class="btn btn-default" type="button" ng-click="rm.import()">Import</button>
+              </div>
             </p>
-        </div>
-        <div class="panel panel-default">
+          </div>
+          <div class="panel panel-default">
             <div class="panel-heading">Add ingredients to recipe</div>
             <div class="panel-body">
-                <form role="form">
-                  <div class="form-group">
+              <form role="form">
+                <div class="form-group">
                   <label>Recipe</label>
                   <select id=selectedRecipe>
                     <option ng-repeat="recipe in rm.recipies">
@@ -84,101 +90,101 @@
                     </option>
                   </select>
                 </div>
-                    <div class="form-group">
-                        <label for="recipeName">Ingredient</label>
-                        <input class="form-control" id="ingredientName" type="text" ng-model="rm.newIngredient.name" placeholder="Name">
-                    </div>
-                    <div class="form-group">
-                        <button class="btn btn-default" type="button" ng-click="rm.addIngredient()">Add ingredient</button>
-                    </div>
-                </form>
+                <div class="form-group">
+                  <label for="recipeName">Ingredient (name it as precise as possible!)</label>
+                  <input class="form-control" id="ingredientName" type="text" ng-model="rm.newIngredient.name" placeholder="Name">
+                </div>
+                <div class="form-group">
+                  <button class="btn btn-default" type="button" ng-click="rm.addIngredient()">Add ingredient</button>
+                </div>
+              </form>
             </div>
-        </div>
-        <table st-safe-src="rm.recipies" st-table="displayedCollection" class="table table-striped">
+          </div>
+          <table st-safe-src="rm.recipies" st-table="displayedCollection" class="table table-striped">
             <thead>
-                <tr>
-                    <th st-sort="name">Recipe</th>
-                    <th st-sort="ingredients">Ingredients (name it as precise as possible!)</th>
-                    <th></th>
-                </tr>
-                <tr>
-                    <th>
-                        <input st-search="name" placeholder="search for recipe" class="input-sm form-control" type="search" />
-                    </th>
-                    <th>
-                    </th>
-                    <th>
-                    </th>
-                </tr>
+              <tr>
+                <th st-sort="name">Recipe</th>
+                <th st-sort="ingredients">Ingredients</th>
+                <th></th>
+              </tr>
+              <tr>
+                <th>
+                  <input st-search="name" placeholder="search for recipe" class="input-sm form-control" type="search" />
+                </th>
+                <th>
+                </th>
+                <th>
+                </th>
+              </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="recipe in displayedCollection" ng-include="rm.getTemplate(recipe)"></tr>
+              <tr ng-repeat="recipe in displayedCollection" ng-include="rm.getTemplate(recipe)"></tr>
             </tbody>
-        </table>
-    </div>
+          </table>
+        </div>
 
-    <script type="text/ng-template" id="display">
-        <td>{{recipe.name}}</td>
-        <td>
-          <select>
-           <option ng-repeat="ingredientItem in recipe.ingredients">
-             {{ingredientItem}}
-           </option>
-          </select>
-        </td>
-        <td>
+        <script type="text/ng-template" id="display">
+          <td>{{recipe.name}}</td>
+          <td>
+            <select>
+              <option ng-repeat="ingredientItem in recipe.ingredients">
+                {{ingredientItem}}
+              </option>
+            </select>
+          </td>
+          <td>
             <button ng-click="rm.removeRecipe(recipe)">Delete recipe</button>
-        </td>
-    </script>
+          </td>
+        </script>
 
 
 
-  <script type="text/javascript">
+        <script type="text/javascript">
 
-  function onHomeyReady( Homey ){
+        function onHomeyReady( Homey ){
 
-    Homey.ready();
-    var scope = angular.element(document.getElementById('recipeName')).scope();
-    scope.$apply(function() {
-      scope.rm.setHomey(Homey, scope);
-    });
+          Homey.ready();
+          var scope = angular.element(document.getElementById('recipeName')).scope();
+          scope.$apply(function() {
+            scope.rm.setHomey(Homey, scope);
+          });
 
-    var usernameElement = document.getElementById('username');
-    var passwordElement = document.getElementById('password');
-    var saveElement = document.getElementById('save');
-    var statusElement = document.getElementById('status');
+          var usernameElement = document.getElementById('username');
+          var passwordElement = document.getElementById('password');
+          var saveElement = document.getElementById('save');
+          var statusElement = document.getElementById('status');
 
-    Homey.api('GET', '/status', null, function ( err, result ) {
-      if ( err ) return Homey.alert( err );
-      if (result == "OK") {
-        statusElement.style.color = "green";
-      }
-      else if (result == "NOT OK" ) {
-        statusElement.style.color = "red";
-      }
-      statusElement.innerHTML = result;
-    });
+          Homey.api('GET', '/status', null, function ( err, result ) {
+            if ( err ) return Homey.alert( err );
+            if (result == "OK") {
+              statusElement.style.color = "green";
+            }
+            else if (result == "NOT OK" ) {
+              statusElement.style.color = "red";
+            }
+            statusElement.innerHTML = result;
+          });
 
-    Homey.get('username', function( err, username ) {
-      if( err ) return Homey.alert( err );
-      usernameElement.value = username;
-    });
+          Homey.get('username', function( err, username ) {
+            if( err ) return Homey.alert( err );
+            usernameElement.value = username;
+          });
 
-    saveElement.addEventListener('click', function(e) {
+          saveElement.addEventListener('click', function(e) {
 
-      Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
-        if( err ) return Homey.alert(err);
+            Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
+              if( err ) return Homey.alert(err);
 
-        Homey.set('username', usernameElement.value)
-        Homey.set('password', passwordElement.value)
+              Homey.set('username', usernameElement.value)
+              Homey.set('password', passwordElement.value)
 
-        window.location.reload();
-      });
+              window.location.reload();
+            });
 
-    });
-  }
-  </script>
+          });
+        }
+        </script>
 
-</body>
-</div>
-</html>
+      </body>
+    </div>
+    </html>
