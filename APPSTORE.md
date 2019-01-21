@@ -36,7 +36,7 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.0.0
+### 2.0.1
 
 - Bugfix: Homey v2.0 support
 
