@@ -36,9 +36,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.0.1
+### 2.0.2
 
-- Bugfix: Homey v2.0 support
+- Bugfix: Adding improved exception handling to prevent crashes
 
 ## TODO
 - Add speech command to remove last added product by Homey
