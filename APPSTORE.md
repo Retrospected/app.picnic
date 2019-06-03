@@ -36,9 +36,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.0.2
+### 2.0.3
 
-- Bugfix: Adding improved exception handling to prevent crashes
+- Adding brand color (thanks to Veldkornet)
 
 ## TODO
 - Add speech command to remove last added product by Homey
