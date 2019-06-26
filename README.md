@@ -36,9 +36,13 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.0.4
+
+- Bugfixes, adding re-authentication fix and improving error handling
+
 ### 2.0.3
 
-- Adding brand color (thanks to Veldkornet
+- Adding brand color (thanks to Veldkornet)
 
 ### 2.0.2
 

@@ -16,7 +16,7 @@ class Picnic extends Homey.App {
 		this.log('Picnic is running...');
 		flowSpeech.init()
 		flowAction.init()
-		
+
 		Homey.ManagerSettings.set("additemLock", false)
 
 		if (Homey.ManagerSettings.getKeys().indexOf("order_status") == -1) {
