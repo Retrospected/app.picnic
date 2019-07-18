@@ -36,12 +36,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.0.4
+### 2.0.5
 
-- Bugfixes, adding re-authentication fix and improving error handling
-
-## TODO
-- Add speech command to remove last added product by Homey
+- Updating dependencies
 
 ## Donate
 Feel free to donate if you like the app :-)

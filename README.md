@@ -36,6 +36,10 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.0.5
+
+- Updating dependencies
+
 ### 2.0.4
 
 - Bugfixes, adding re-authentication fix and improving error handling
@@ -86,9 +90,6 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 <b>Note that after this update you will have to re-authenticate via the Picnic app settings.</b>
 
 - Bugfix: session expires after about a month. To solve this the app now stores the username and password and retrieves a new session as soon as it is required
-
-## TODO
-- Add speech command to remove last added product by Homey
 
 ## Donate
 Feel free to donate if you like the app :-)
