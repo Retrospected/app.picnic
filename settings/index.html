@@ -9,32 +9,34 @@
 
 </head>
 <body>
-
-  <h1 data-i18n="settings.title">
-  </h1>
   <p data-i18n="settings.subtitle"/>
 
   <div class="form-group">
-    <h2>Settings</h2>
+    <h2><var style="font-style:normal;" data-i18n="settings.settings"/></h2>
     <div>
       <div class="panel panel-default">
         <div class="panel-heading">Account</div>
         <div class="panel-body">
           <form role="form">
             <div class="form-group">
-              <label for="username" data-i18n="settings.username">:</label>
+              <label for="username" data-i18n="settings.username"></label>
               <input class="form-control" id="username" type="text" value="" />
             </div>
             <div class="form-group">
-              <label for="password" data-i18n="settings.password">:</label>
+              <label for="password" data-i18n="settings.password"></label>
               <input id="password" type="password" value="" />
             </div>
             <div class="form-group">
-              <label for="authenticated" data-i18n="settings.authenticated">:</label>
+              <label for="authenticated" data-i18n="settings.authenticated"></label>
               <div><var id="status">loading...</var></div>
             </div>
+            <div class="form-group">
+              <label for="order-status" data-i18n="settings.order-status"></label>
+              <div><var id="order-status">loading...</var></div>
+            </div>
           </form>
-          <button id="save" class="right">Save changes</button>
+          <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"/></button>
+          <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"/></button>
         </div>
       </div>
     </div>
@@ -137,8 +139,6 @@
           </td>
         </script>
 
-
-
         <script type="text/javascript">
 
         function onHomeyReady( Homey ){
@@ -153,6 +153,8 @@
           var passwordElement = document.getElementById('password');
           var saveElement = document.getElementById('save');
           var statusElement = document.getElementById('status');
+          var orderStatusElement = document.getElementById('order-status');
+          var resetOrderStatusElement = document.getElementById('reset-order-status');
 
           Homey.api('GET', '/status', null, function ( err, result ) {
             if ( err ) return Homey.alert( err );
@@ -165,9 +167,22 @@
             statusElement.innerHTML = result;
           });
 
+          Homey.api('GET', '/order-status', null, function ( err, result ) {
+            if ( err ) return Homey.alert( err );
+            orderStatusElement.innerHTML = result;
+          });
+
           Homey.get('username', function( err, username ) {
             if( err ) return Homey.alert( err );
             usernameElement.value = username;
+          });
+
+          resetOrderStatusElement.addEventListener('click', function(e) {
+
+            Homey.api('GET', '/reset-order-status', function( err, result ) {
+              if( err ) return Homey.alert(err);
+              window.location.reload();
+            });
           });
 
           saveElement.addEventListener('click', function(e) {

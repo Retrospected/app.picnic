@@ -22,5 +22,21 @@ module.exports = [
         callback(null, res)
       })
     }
+  },
+  {
+    method:         'GET',
+    path:            '/order-status',
+    requires_authorization: true,
+    fn: function( args, callback ) {
+      callback(null,Homey.ManagerSettings.get("order_status"));
+    }
+  },
+  {
+    method:         'GET',
+    path:            '/reset-order-status',
+    requires_authorization: true,
+    fn: function( args, callback ) {
+      callback(null,Homey.ManagerSettings.set("order_status", ""));
+    }
   }
 ]

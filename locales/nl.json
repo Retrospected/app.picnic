@@ -1,11 +1,14 @@
 {
     "title": "Picnic",
     "settings": {
-        "title": "Picnic",
+        "settings": "Instellingen",
         "subtitle": "Log in met je gebruikersnaam en wachtwoord.",
         "username": "Gebuikersnaam",
         "password": "Wachtwoord",
-        "authenticated": "Authenticatie status"
+        "authenticated": "Authenticatie status",
+        "order-status": "Bestelling status",
+        "order-status-button": "bestelling status",
+        "save-button": "Wijzigingen opslaan"
     },
     "speech": {
         "which_product": "Welk product wil je toevoegen?",

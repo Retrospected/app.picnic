@@ -1,11 +1,14 @@
 {
     "title": "Picnic",
     "settings": {
-        "title": "Picnic",
+        "settings": "Settings",
         "subtitle": "Log on to Picnic with your username and password.",
         "username": "Username",
         "password": "Password",
-        "authenticated": "Authentication status"
+        "authenticated": "Authentication status",
+        "order-status": "Order status",
+        "order-status-button": "order status",
+        "save-button": "Save changes"
     },
     "speech": {
         "which_product": "Which product would you like to add?",

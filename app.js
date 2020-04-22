@@ -5,7 +5,7 @@ const flowSpeech = require('./lib/flow/speech.js')
 const flowAction = require('./lib/flow/actions.js')
 const flowTrigger = require('./lib/flow/triggers.js')
 
-var http = require("https");
+var http = require("https")
 var md5 = require("md5")
 
 const POLL_INTERVAL = 1000 * 60 * 5 //5min
