@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "compatibility": ">=2.0.0",
   "sdk": 2,
   "name": {
@@ -13,7 +13,10 @@
     "internet"
   ],
   "brandColor": "#e40613",
-  "permissions": [],
+  "permissions": [
+    "homey:manager:speech-output",
+    "homey:manager:speech-input"
+  ],
   "images": {
     "large": "/assets/images/large.png",
     "small": "/assets/images/small.png"
@@ -25,10 +28,6 @@
   "bugs": {
     "url": "https://github.com/Retrospected/app.picnic/issues"
   },
-  "permissions": [
-    "homey:manager:speech-output",
-    "homey:manager:speech-input"
-  ],
   "flow": {
     "actions": [
       {
@@ -37,13 +36,13 @@
           "en": "Add a product",
           "nl": "Voeg een product toe"
         },
-        "args":[
+        "args": [
           {
-            "name":"product",
-            "type":"text",
-            "placeholder":{
-              "en":"bananas",
-              "nl":"bananen"
+            "name": "product",
+            "type": "text",
+            "placeholder": {
+              "en": "bananas",
+              "nl": "bananen"
             }
           }
         ]
@@ -54,13 +53,13 @@
           "en": "Add a recipy",
           "nl": "Voeg recept toe"
         },
-        "args":[
+        "args": [
           {
-            "name":"recipy",
-            "type":"autocomplete",
-            "placeholder":{
-              "en":"recipy",
-              "nl":"recept"
+            "name": "recipy",
+            "type": "autocomplete",
+            "placeholder": {
+              "en": "recipy",
+              "nl": "recept"
             }
           }
         ]
@@ -74,108 +73,108 @@
       }
     ],
     "triggers": [
-        {
-            "id": "groceries_ordered",
-            "title": {
-                "en": "Groceries have been ordered",
-                "nl": "Boodschappen zijn besteld"
-            },
-            "tokens": [
-               {
-                   "name": "price",
-                   "type": "number",
-                   "title": {
-                       "en": "price",
-                       "nl": "prijs"
-                   },
-                   "example": 25
-               },
-               {
-                   "name": "eta_start",
-                   "type": "string",
-                   "title": {
-                       "en": "eta begin"
-                   },
-                   "example": "20:05"
-               },
-               {
-                   "name": "eta_end",
-                   "type": "string",
-                   "title": {
-                       "en": "eta end"
-                   },
-                   "example": "21:05"
-               },
-               {
-                   "name": "eta_date",
-                   "type": "string",
-                   "title": {
-                       "en": "eta date"
-                   },
-                   "example": "2018-09-03"
-               }
-           ]
+      {
+        "id": "groceries_ordered",
+        "title": {
+          "en": "Groceries have been ordered",
+          "nl": "Boodschappen zijn besteld"
         },
-        {
-            "id": "delivery_announced",
+        "tokens": [
+          {
+            "name": "price",
+            "type": "number",
             "title": {
-                "en": "Groceries will be delivered soon",
-                "nl": "Boodschappen worden binnenkort geleverd"
+              "en": "price",
+              "nl": "prijs"
             },
-            "tokens": [
-               {
-                   "name": "eta_start",
-                   "type": "string",
-                   "title": {
-                       "en": "eta begin"
-                   },
-                   "example": "20:25"
-               },
-               {
-                   "name": "eta_end",
-                   "type": "string",
-                   "title": {
-                       "en": "eta end"
-                   },
-                   "example": "20:45"
-               },
-               {
-                   "name": "eta_date",
-                   "type": "string",
-                   "title": {
-                       "en": "eta date"
-                   },
-                   "example": "2018-09-03"
-               }
-           ]
+            "example": 25
+          },
+          {
+            "name": "eta_start",
+            "type": "string",
+            "title": {
+              "en": "eta begin"
+            },
+            "example": "20:05"
+          },
+          {
+            "name": "eta_end",
+            "type": "string",
+            "title": {
+              "en": "eta end"
+            },
+            "example": "21:05"
+          },
+          {
+            "name": "eta_date",
+            "type": "string",
+            "title": {
+              "en": "eta date"
+            },
+            "example": "2018-09-03"
+          }
+        ]
+      },
+      {
+        "id": "delivery_announced",
+        "title": {
+          "en": "Groceries will be delivered soon",
+          "nl": "Boodschappen worden binnenkort geleverd"
         },
-        {
-            "id": "groceries_delivered",
+        "tokens": [
+          {
+            "name": "eta_start",
+            "type": "string",
             "title": {
-                "en": "Groceries have been delivered",
-                "nl": "Boodschappen zijn bezorgd"
+              "en": "eta begin"
             },
-            "tokens": [
-               {
-                   "name": "delivery_time",
-                   "type": "string",
-                   "title": {
-                       "en": "delivery time",
-                       "nl": "aflevertijd"
-                   },
-                   "example": "20:45"
-               },
-               {
-                   "name": "delivery_date",
-                   "type": "string",
-                   "title": {
-                       "en": "eta_date",
-                       "nl": "afleverdatum"
-                   },
-                   "example": "2018-09-03"
-               }
-           ]
-        }
+            "example": "20:25"
+          },
+          {
+            "name": "eta_end",
+            "type": "string",
+            "title": {
+              "en": "eta end"
+            },
+            "example": "20:45"
+          },
+          {
+            "name": "eta_date",
+            "type": "string",
+            "title": {
+              "en": "eta date"
+            },
+            "example": "2018-09-03"
+          }
+        ]
+      },
+      {
+        "id": "groceries_delivered",
+        "title": {
+          "en": "Groceries have been delivered",
+          "nl": "Boodschappen zijn bezorgd"
+        },
+        "tokens": [
+          {
+            "name": "delivery_time",
+            "type": "string",
+            "title": {
+              "en": "delivery time",
+              "nl": "aflevertijd"
+            },
+            "example": "20:45"
+          },
+          {
+            "name": "delivery_date",
+            "type": "string",
+            "title": {
+              "en": "eta_date",
+              "nl": "afleverdatum"
+            },
+            "example": "2018-09-03"
+          }
+        ]
+      }
     ]
   },
   "speech": {
@@ -205,7 +204,11 @@
     }
   },
   "speechExamples": {
-    "en": [ "Add a product." ],
-    "nl": [ "Voeg een product toe." ]
+    "en": [
+      "Add a product."
+    ],
+    "nl": [
+      "Voeg een product toe."
+    ]
   }
 }
