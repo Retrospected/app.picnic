@@ -36,7 +36,7 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.1.3
+### 2.1.4
 
 - Updating dependencies and removing deprecated "request" dependency
 - Removing obsolete "http" dependency
