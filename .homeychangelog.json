@@ -4,5 +4,8 @@
   },
   "2.1.2": {
     "en": "Updated dependencies"
+  },
+  "2.1.3": {
+    "en": "Fixing version numbering"
   }
 }

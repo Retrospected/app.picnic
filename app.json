@@ -25,6 +25,13 @@
     "name": "Sander Maas",
     "email": "sandermaas@gmail.com"
   },
+  "contributing": {
+    "donate": {
+      "paypal": {
+        "username": "Retrospected"
+      }
+    }
+  },
   "bugs": {
     "url": "https://github.com/Retrospected/app.picnic/issues"
   },
