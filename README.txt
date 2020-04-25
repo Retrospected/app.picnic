@@ -1,5 +1,3 @@
-Picnic app for Homey
-
 Doing your groceries at Picnic via Homey.
 
 Flow Triggers:

@@ -36,6 +36,10 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.1.6
+
+- Fixing another README formatting issue
+
 ### 2.1.5
 
 - Fixing README formatting issue
