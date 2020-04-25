@@ -25,11 +25,11 @@ Flow Actions:
 
 Speech triggers:
 English
-Trigger: Add (a) product<br>
-Response: Which product would you like to add?<br>
+Trigger: Add (a) product
+Response: Which product would you like to add?
 Argument: 'name your product'
 
 Dutch
-Trigger: Voeg (een) product toe<br>
-Response: Welk product wil je toevoegen?<br>
+Trigger: Voeg (een) product toe
+Response: Welk product wil je toevoegen?
 Argument: 'naam van het product'
