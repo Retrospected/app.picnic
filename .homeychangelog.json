@@ -16,5 +16,8 @@
   },
   "2.1.6": {
     "en": "Another formatting issue in README"
+  },
+  "2.2.0": {
+    "en": "Added triggers for the begin and end of the announced time frame of delivery"
   }
 }

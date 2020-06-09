@@ -30,6 +30,9 @@ class Picnic extends Homey.App {
 		this._groceriesOrderedTrigger = new Homey.FlowCardTrigger('groceries_ordered').register()
 		this._deliveryAnnouncedTrigger = new Homey.FlowCardTrigger('delivery_announced').register()
 		this._groceriesDelivered = new Homey.FlowCardTrigger('groceries_delivered').register()
+
+		this._deliveryAnnouncedTriggerBeginTime = new Homey.FlowCardTrigger('delivery_announced_begin_time').register()
+		this._deliveryAnnouncedTriggerEndTime = new Homey.FlowCardTrigger('delivery_announced_end_time').register()
 	}
 
 	pollOrder() {
@@ -67,6 +70,22 @@ class Picnic extends Homey.App {
 
 							let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
 							Homey.app._deliveryAnnouncedTrigger.trigger(eta)
+
+							Homey.ManagerCron.registerTask('delivery_announced_begin_time', new Date(eta_date + ' ' + eta_start))
+								.then(task => {
+									task.on('run', () => {
+										Homey.app._deliveryAnnouncedTriggerBeginTime.trigger()
+									})
+								})
+								.catch(() => Home.app.log('cron task already exists'));
+
+							Homey.ManagerCron.registerTask('delivery_announced_end_time', new Date(eta_date + ' ' + eta_end))
+								.then(task => {
+									task.on('run', () => {
+										Homey.app._deliveryAnnouncedTriggerEndTime.trigger()
+									})
+								})
+								.catch(() => Home.app.log('cron task already exists'));
 						}
 						else if (orderEvent["event"] == 'groceries_delivered') {
 							Homey.app.log("Order changed to groceries_delivered, firing trigger")

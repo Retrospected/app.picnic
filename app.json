@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "2.1.6",
+  "version": "2.2.0",
   "compatibility": ">=2.0.0",
   "sdk": 2,
   "name": {
@@ -154,6 +154,20 @@
             "example": "2018-09-03"
           }
         ]
+      },
+      {
+        "id": "delivery_announced_begin_time",
+        "title": {
+          "en": "Start of the time frame when the delivery is announced",
+          "nl": "Begin van het tijdsbestek van levering"
+        }
+      },
+      {
+        "id": "delivery_announced_end_time",
+        "title": {
+          "en": "End of the time frame when the delivery is announced",
+          "nl": "Einde van het de levering"
+        }
       },
       {
         "id": "groceries_delivered",

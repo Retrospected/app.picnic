@@ -14,6 +14,8 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
   - eta date
   - eta begin, returning the begin of the 20 minutes delivery timeframe
   - eta end, returning the end of the 20 minutes delivery timeframe
+- Start of the time frame when the delivery is announced
+- End of the time frame when the delivery is announced
 - Your groceries have been delivered, with tokens:
   - delivery date
   - delivery time
@@ -35,6 +37,10 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 <b>Argument:</b> 'naam van het product'
 
 ## CHANGELOG
+
+### 2.2.0
+
+- Added triggers for the begin and end of the announced time frame of delivery
 
 ### 2.1.6
 
