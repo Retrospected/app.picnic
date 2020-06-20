@@ -38,9 +38,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.2.0
+### 2.2.1
 
-- Added triggers for the begin and end of the announced time frame of delivery
+- Fixed stupid typo in the Dutch translation
 
 ## Donate
 Feel free to donate if you like the app :-)

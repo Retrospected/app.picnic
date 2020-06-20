@@ -19,5 +19,8 @@
   },
   "2.2.0": {
     "en": "Added triggers for the begin and end of the announced time frame of delivery"
+  },
+  "2.2.1": {
+    "en": "Fixed stupid typo in the Dutch translation"
   }
 }
