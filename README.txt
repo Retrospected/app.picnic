@@ -1,5 +1,3 @@
-Doing your groceries at Picnic via Homey.
-
 Flow Triggers:
 Polling the status of your Picnic account every 5 minutes and providing trigger flowcards based on the following events:
 
