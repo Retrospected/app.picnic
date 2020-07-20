@@ -17,64 +17,77 @@ class Picnic extends Homey.App {
 		flowSpeech.init()
 		flowAction.init()
 
-		Homey.ManagerSettings.set("additemLock", false)
+		this.homey.settings.set("additemLock", false)
 
-		if (Homey.ManagerSettings.getKeys().indexOf("order_status") == -1) {
-			Homey.ManagerSettings.set("order_status", null)
+		if (this.homey.settings.getKeys().indexOf("order_status") == -1) {
+			this.homey.settings.set("order_status", null)
 		}
 
 
 		this._pollOrderInterval = setInterval(this.pollOrder.bind(this), POLL_INTERVAL);
 		this.pollOrder();
 
-		this._groceriesOrderedTrigger = new Homey.FlowCardTrigger('groceries_ordered').register()
-		this._deliveryAnnouncedTrigger = new Homey.FlowCardTrigger('delivery_announced').register()
-		this._groceriesDelivered = new Homey.FlowCardTrigger('groceries_delivered').register()
+		this._groceriesOrderedTrigger = this.homey.flow
+			.getDeviceTriggerCard('groceries_ordered')
+			.registerRunListener();
+		this._deliveryAnnouncedTrigger = this.homey.flow
+			.getDeviceTriggerCard('delivery_announced')
+			.registerRunListener();
 
-		this._deliveryAnnouncedTriggerBeginTime = new Homey.FlowCardTrigger('delivery_announced_begin_time').register()
-		this._deliveryAnnouncedTriggerEndTime = new Homey.FlowCardTrigger('delivery_announced_end_time').register()
+		this._groceriesDelivered = this.homey.flow
+			.getDeviceTriggerCard('groceries_delivered')
+			.registerRunListener();
+
+		this._deliveryAnnouncedTriggerBeginTime = this.homey.flow
+			.getDeviceTriggerCard('delivery_announced_begin_time')
+			.registerRunListener();
+
+		this._deliveryAnnouncedTriggerEndTime = this.homey.flow
+			.getDeviceTriggerCard('delivery_announced_end_time')
+			.registerRunListener();
 	}
 
 	pollOrder() {
 		return new Promise((resolve, reject) => {
-			Homey.app.log("Polling for new order info")
-			if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") > -1 && Homey.ManagerSettings.getKeys().indexOf("username") > -1 && Homey.ManagerSettings.getKeys().indexOf("password") > -1) {
+			this.log("Polling for new order info")
+			if (this.homey.settings.getKeys().indexOf("x-picnic-auth") > -1 && this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password") > -1) {
 				flowTrigger.getOrderStatus().then(orderEvent => {
-					Homey.app.log("Processing order info")
+					this.log("Processing order info")
 					if ( orderEvent.toString() == "Error: unauthorized" ) {
-						Homey.app.log("Error: unauthorized, please check your credentials")
-						Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callBack) {
+						this.log("Error: unauthorized, please check your credentials")
+						this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function(callBack) {
 							return Promise.reject(new Error('Re-authentication failed.'));
 						});
 					}
 					else if ( orderEvent instanceof Error ) {
-						Homey.app.log("Order retrieving failed, connectivity issues?")
+						this.log("Order retrieving failed, connectivity issues?")
 						return Promise.reject(new Error('Status could not be retrieved.'));
 					}
 					else {
-						Homey.app.log("Order data succesfully retrieved")
+						this.log("Order data succesfully retrieved")
 						if (orderEvent["event"] == 'groceries_ordered') {
-							Homey.app.log("Order changed to groceries_ordered, firing trigger")
+							this.log("Order changed to groceries_ordered, firing trigger")
 							var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 							var eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 							var eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
 							let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
-							Homey.app._groceriesOrderedTrigger.trigger(data)
+							this._groceriesOrderedTrigger.trigger(data)
 						}
 						else if (orderEvent["event"] == 'delivery_announced') {
-							Homey.app.log("Order changed to delivery_announced, firing trigger")
+							this.log("Order changed to delivery_announced, firing trigger")
 							var eta_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 							var eta_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 							var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
 							let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
-							Homey.app._deliveryAnnouncedTrigger.trigger(eta)
+							this._deliveryAnnouncedTrigger.trigger(eta)
 
+							//TODO
 							Homey.ManagerCron.registerTask('delivery_announced_begin_time', new Date(eta_date + ' ' + eta_start))
 								.then(task => {
 									task.on('run', () => {
-										Homey.app._deliveryAnnouncedTriggerBeginTime.trigger()
+										this._deliveryAnnouncedTriggerBeginTime.trigger()
 									})
 								})
 								.catch(() => Home.app.log('cron task already exists'));
@@ -82,24 +95,24 @@ class Picnic extends Homey.App {
 							Homey.ManagerCron.registerTask('delivery_announced_end_time', new Date(eta_date + ' ' + eta_end))
 								.then(task => {
 									task.on('run', () => {
-										Homey.app._deliveryAnnouncedTriggerEndTime.trigger()
+										this._deliveryAnnouncedTriggerEndTime.trigger()
 									})
 								})
 								.catch(() => Home.app.log('cron task already exists'));
 						}
 						else if (orderEvent["event"] == 'groceries_delivered') {
-							Homey.app.log("Order changed to groceries_delivered, firing trigger")
+							this.log("Order changed to groceries_delivered, firing trigger")
 							var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
 							var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
 							let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
 
-							Homey.app._groceriesDelivered.trigger(delivery)
+							this._groceriesDelivered.trigger(delivery)
 						}
 					}
 				})
 				.catch (error => {
-					Homey.app.log('Error: '+error)
+					this.log('Error: '+error)
 					return Promise.reject(new Error('Order polling failed.'))
 				});
 			}
@@ -130,9 +143,9 @@ class Picnic extends Homey.App {
 
 		const req = http.request(options, (res) => {
 			if (res.statusCode == 200) {
-				Homey.ManagerSettings.set("x-picnic-auth", res.headers['x-picnic-auth'])
-				Homey.ManagerSettings.set("username", username)
-				Homey.ManagerSettings.set("password", password)
+				this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
+				this.homey.settings.set("username", username)
+				this.homey.settings.set("password", password)
 				return callback(null, "success")
 			}
 			else {
@@ -158,7 +171,7 @@ class Picnic extends Homey.App {
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"x-picnic-auth": Homey.ManagerSettings.get("x-picnic-auth")
+				"x-picnic-auth": this.homey.settings.get("x-picnic-auth")
 			}
 		}
 

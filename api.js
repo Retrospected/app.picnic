@@ -1,7 +1,7 @@
 'use strict';
 
 const Homey = require('homey');
-
+//TODO REWRITE SEE: https://apps-sdk-v3.developer.athom.com/tutorial-Web%20API.html
 module.exports = [
 
   {
@@ -10,7 +10,7 @@ module.exports = [
     requires_authorization: true,
 
     fn: function( args, callback ) {
-      Homey.app.login( args.body.username, args.body.password, callback );
+      this.login( args.body.username, args.body.password, callback );
     }
   },
   {
@@ -18,7 +18,7 @@ module.exports = [
     path:            '/status',
     requires_authorization: true,
     fn: function( args, callback ) {
-      Homey.app.status( function (res) {
+      this.status( function (res) {
         callback(null, res)
       })
     }
@@ -28,7 +28,7 @@ module.exports = [
     path:            '/order-status',
     requires_authorization: true,
     fn: function( args, callback ) {
-      callback(null,Homey.ManagerSettings.get("order_status"));
+      callback(null,this.homey.settings.get("order_status"));
     }
   },
   {
@@ -36,7 +36,7 @@ module.exports = [
     path:            '/reset-order-status',
     requires_authorization: true,
     fn: function( args, callback ) {
-      callback(null,Homey.ManagerSettings.set("order_status", ""));
+      callback(null,this.homey.settings.set("order_status", ""));
     }
   }
 ]
