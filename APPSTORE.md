@@ -38,9 +38,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.2.1
+### 2.2.2
 
-- Fixed stupid typo in the Dutch translation
+- Fixed order retrieval
 
 ## Donate
 Feel free to donate if you like the app :-)

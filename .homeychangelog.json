@@ -22,5 +22,8 @@
   },
   "2.2.1": {
     "en": "Fixed stupid typo in the Dutch translation"
+  },
+  "2.2.2": {
+    "en": "Fixed order retrieval"
   }
 }
