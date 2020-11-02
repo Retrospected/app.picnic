@@ -25,5 +25,8 @@
   },
   "2.2.2": {
     "en": "Fixed order retrieval"
+  },
+  "2.2.3": {
+    "en": "Adding order existence check"
   }
 }

@@ -38,9 +38,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.2.2
+### 2.2.3
 
-- Fixed order retrieval
+- Adding order existence check
 
 ## Donate
 Feel free to donate if you like the app :-)
