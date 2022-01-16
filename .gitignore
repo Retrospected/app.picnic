@@ -1,1 +1,5 @@
 testdata/
+
+
+# Added by Homey CLI
+/.homeybuild/

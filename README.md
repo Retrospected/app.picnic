@@ -38,6 +38,10 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.2.4
+
+- Fixing bug that would expire your session after 2 weeks
+
 ### 2.2.3
 
 - Adding order existence check

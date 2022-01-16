@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "compatibility": ">=2.0.0",
   "sdk": 2,
   "name": {
@@ -43,6 +43,7 @@
           "en": "Add a product",
           "nl": "Voeg een product toe"
         },
+        "titleFormatted": { "en": "Add product [[product]]", "nl": "Voeg product [[product]] toe" },
         "args": [
           {
             "name": "product",
@@ -60,6 +61,7 @@
           "en": "Add a recipy",
           "nl": "Voeg recept toe"
         },
+        "titleFormatted": { "en": "Add recipy [[recipy]]", "nl": "Voeg recept [[recipy]] toe" },
         "args": [
           {
             "name": "recipy",

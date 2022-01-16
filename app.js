@@ -13,7 +13,7 @@ const POLL_INTERVAL = 1000 * 60 * 5 //5min
 class Picnic extends Homey.App {
 
 	onInit() {
-		this.log('Picnic is running...');
+		this.log('Picnic is running...')
 		flowSpeech.init()
 		flowAction.init()
 
@@ -22,7 +22,6 @@ class Picnic extends Homey.App {
 		if (Homey.ManagerSettings.getKeys().indexOf("order_status") == -1) {
 			Homey.ManagerSettings.set("order_status", null)
 		}
-
 
 		this._pollOrderInterval = setInterval(this.pollOrder.bind(this), POLL_INTERVAL);
 		this.pollOrder();
@@ -99,8 +98,21 @@ class Picnic extends Homey.App {
 					}
 				})
 				.catch (error => {
-					Homey.app.log('Error: '+error)
-					return Promise.reject(new Error('Order polling failed.'))
+					if ( error == "Error: unauthorized" ) {
+						Homey.app.log("Error: unauthorized, trying to retrieve new auth token.")
+						Homey.app.login(Homey.ManagerSettings.get('username'), Homey.ManagerSettings.get('password'), function(callback) {
+							Homey.app.log(callback)
+							if (callback == "success") {
+								Homey.app.log("Auth token succesfully renewed.")
+								return Promise.resolve('Success');
+							} else {
+								return Promise.reject(new Error('Error: Re-authentication failed. Please check your credentials.'));
+							}
+						});
+					}
+					else {
+						return Promise.reject(new Error('Error: an unexpected error occured.'))
+					}
 				});
 			}
 		});
@@ -133,7 +145,7 @@ class Picnic extends Homey.App {
 				Homey.ManagerSettings.set("x-picnic-auth", res.headers['x-picnic-auth'])
 				Homey.ManagerSettings.set("username", username)
 				Homey.ManagerSettings.set("password", password)
-				return callback(null, "success")
+				return callback("success")
 			}
 			else {
 				return callback(new Error('Problem with request or authentication failed.'));

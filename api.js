@@ -10,7 +10,9 @@ module.exports = [
     requires_authorization: true,
 
     fn: function( args, callback ) {
-      Homey.app.login( args.body.username, args.body.password, callback );
+      Homey.app.login( args.body.username, args.body.password, function (res) {
+        callback( null, res)
+      } );
     }
   },
   {
