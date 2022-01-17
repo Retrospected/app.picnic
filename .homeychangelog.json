@@ -31,5 +31,8 @@
   },
   "2.2.4": {
     "en": "Fixing bug that would expire your session after 2 weeks"
+  },
+  "2.2.5": {
+    "en": "Changing readme files to comply with Athom's standards"
   }
 }
