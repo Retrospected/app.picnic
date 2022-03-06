@@ -34,5 +34,8 @@
   },
   "2.2.5": {
     "en": "Changing readme files to comply with Athom's standards"
+  },
+  "2.3.0": {
+    "en": "Fixed API endpoint, removed speech input and improved polling intervals"
   }
 }

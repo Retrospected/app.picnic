@@ -40,9 +40,15 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.3.0
+
+- Updated order summary API
+- Removed speech input code, no longer supported by Homey
+- Improved polling intervals based on order status
+
 ### 2.2.5
 
--  Changing readme files to comply with Athom's standards
+- Changing readme files to comply with Athom's standards
 
 ### 2.2.4
 

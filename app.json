@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "2.2.5",
+  "version": "2.3.0",
   "compatibility": ">=2.0.0",
   "sdk": 2,
   "name": {
@@ -14,8 +14,7 @@
   ],
   "brandColor": "#e40613",
   "permissions": [
-    "homey:manager:speech-output",
-    "homey:manager:speech-input"
+    "homey:manager:speech-output"
   ],
   "images": {
     "large": "/assets/images/large.png",

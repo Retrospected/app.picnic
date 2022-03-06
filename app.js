@@ -1,30 +1,23 @@
 'use strict';
 
 const Homey = require('homey');
-const flowSpeech = require('./lib/flow/speech.js')
 const flowAction = require('./lib/flow/actions.js')
 const flowTrigger = require('./lib/flow/triggers.js')
 
 var http = require("https")
 var md5 = require("md5")
 
-const POLL_INTERVAL = 1000 * 60 * 5 //5min
+const DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 12 // 12 hours
+const ORDERED_POLL_INTERVAL = 1000 * 60 * 60 * 1 // 1 hour
+const DELIVERY_POLL_INTERVAL = 1000 * 60 * 5 // 5 minutes
 
 class Picnic extends Homey.App {
 
 	onInit() {
 		this.log('Picnic is running...')
-		flowSpeech.init()
 		flowAction.init()
 
 		Homey.ManagerSettings.set("additemLock", false)
-
-		if (Homey.ManagerSettings.getKeys().indexOf("order_status") == -1) {
-			Homey.ManagerSettings.set("order_status", null)
-		}
-
-		this._pollOrderInterval = setInterval(this.pollOrder.bind(this), POLL_INTERVAL);
-		this.pollOrder();
 
 		this._groceriesOrderedTrigger = new Homey.FlowCardTrigger('groceries_ordered').register()
 		this._deliveryAnnouncedTrigger = new Homey.FlowCardTrigger('delivery_announced').register()
@@ -32,6 +25,39 @@ class Picnic extends Homey.App {
 
 		this._deliveryAnnouncedTriggerBeginTime = new Homey.FlowCardTrigger('delivery_announced_begin_time').register()
 		this._deliveryAnnouncedTriggerEndTime = new Homey.FlowCardTrigger('delivery_announced_end_time').register()
+		
+		// simulate fresh install
+		// Homey.ManagerSettings.unset("order_status")
+		// Homey.ManagerSettings.unset("x-picnic-auth")
+		// Homey.ManagerSettings.unset("username")
+		// Homey.ManagerSettings.unset("password")
+
+		// retrieve initial order info
+		if (Homey.ManagerSettings.getKeys().indexOf("x-picnic-auth") != -1)
+		{
+			Homey.app.log("Auth found, retrieving order")
+			this.pollOrder();
+		}
+
+		// start relevant interval
+		if (Homey.ManagerSettings.get("order_status") == "order_placed") {
+			Homey.app.log("Order found")
+			Homey.app.log("Updating poll interval to "+ORDERED_POLL_INTERVAL/1000/60+" minutes");
+			clearInterval();
+			setInterval(this.pollOrder.bind(this), ORDERED_POLL_INTERVAL);
+		}
+		else if (Homey.ManagerSettings.get("order_status") == "order_announced") {
+			Homey.app.log("Order announced")
+			Homey.app.log("Updating poll interval to "+DELIVERY_POLL_INTERVAL/1000/60+" minutes");
+			clearInterval();
+			setInterval(this.pollOrder.bind(this), DELIVERY_POLL_INTERVAL);
+		}
+		else if (Homey.ManagerSettings.get("order_status") == "order_delivered") {
+			Homey.app.log("No order found")
+			Homey.app.log("Updating poll interval to "+DEFAULT_POLL_INTERVAL/1000/60+" minutes");
+			clearInterval();
+			setInterval(this.pollOrder.bind(this), DEFAULT_POLL_INTERVAL);
+		}
 	}
 
 	pollOrder() {
@@ -60,6 +86,10 @@ class Picnic extends Homey.App {
 
 							let data = { 'price': orderEvent["price"],  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
 							Homey.app._groceriesOrderedTrigger.trigger(data)
+							
+							Homey.app.log("Updating poll interval to "+ORDERED_POLL_INTERVAL/1000/60+" minutes");
+							clearInterval();
+							setInterval(this.pollOrder.bind(this), ORDERED_POLL_INTERVAL);
 						}
 						else if (orderEvent["event"] == 'delivery_announced') {
 							Homey.app.log("Order changed to delivery_announced, firing trigger")
@@ -69,6 +99,10 @@ class Picnic extends Homey.App {
 
 							let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
 							Homey.app._deliveryAnnouncedTrigger.trigger(eta)
+
+							Homey.app.log("Updating poll interval to "+DELIVERY_POLL_INTERVAL/1000/60+" minutes");
+							clearInterval();
+							setInterval(this.pollOrder.bind(this), DELIVERY_POLL_INTERVAL);
 
 							Homey.ManagerCron.registerTask('delivery_announced_begin_time', new Date(eta_date + ' ' + eta_start))
 								.then(task => {
@@ -94,6 +128,10 @@ class Picnic extends Homey.App {
 							let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
 
 							Homey.app._groceriesDelivered.trigger(delivery)
+
+							Homey.app.log("Updating poll interval to "+DEFAULT_POLL_INTERVAL/1000/60+" minutes");
+							clearInterval();
+							setInterval(this.pollOrder.bind(this), DEFAULT_POLL_INTERVAL);
 						}
 					}
 				})
@@ -145,6 +183,7 @@ class Picnic extends Homey.App {
 				Homey.ManagerSettings.set("x-picnic-auth", res.headers['x-picnic-auth'])
 				Homey.ManagerSettings.set("username", username)
 				Homey.ManagerSettings.set("password", password)
+				this.pollOrder();
 				return callback("success")
 			}
 			else {
