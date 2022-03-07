@@ -12,6 +12,8 @@ const DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 12 // 12 hours
 const ORDERED_POLL_INTERVAL = 1000 * 60 * 60 * 1 // 1 hour
 const DELIVERY_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 
+var runningInterval;
+
 class Picnic extends Homey.App {
 
 	onInit() {
@@ -132,8 +134,6 @@ class Picnic extends Homey.App {
 							let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
 
 							Homey.app._groceriesDelivered.trigger(delivery)
-
-							Homey.app.log("Updating poll interval to "+DEFAULT_POLL_INTERVAL/1000/60+" minutes");
 							this.changeInterval(DEFAULT_POLL_INTERVAL);
 							
 							Homey.ManagerSettings.unset("delivery_eta_start")
@@ -162,9 +162,9 @@ class Picnic extends Homey.App {
 	}
 
 	changeInterval(interval) {
-		Homey.app.log("Changing polling interval to every: "+interval/1000/60+" minutes");
-		clearInterval();
-		setInterval(this.pollOrder.bind(this), interval);
+		Homey.app.log("Changing polling interval to: "+interval/1000/60+" minutes");
+		clearInterval(runningInterval);
+		runningInterval = setInterval(this.pollOrder.bind(this), interval);
 	}
 
 	createDeliverySchedule(eta_start) {
