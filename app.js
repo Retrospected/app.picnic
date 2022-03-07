@@ -171,7 +171,7 @@ class Picnic extends Homey.App {
 		const deliveryStartMin30 = new Date(new Date(eta_start) - 1000*60*30);
 		Homey.app.log("Increasing poll rate at " + deliveryStartMin30.toString())
 		const job = schedule.scheduleJob(deliveryStartMin30, function(){
-			this.changeInterval(DELIVERY_POLL_INTERVAL);
+			Homey.app.changeInterval(DELIVERY_POLL_INTERVAL);
 		});
 	}
 
