@@ -204,6 +204,7 @@ class Picnic extends Homey.App {
 				Homey.ManagerSettings.set("x-picnic-auth", res.headers['x-picnic-auth'])
 				Homey.ManagerSettings.set("username", username)
 				Homey.ManagerSettings.set("password", password)
+				this.pollOrder();
 				return callback("success")
 			}
 			else {
