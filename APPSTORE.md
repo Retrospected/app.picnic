@@ -38,9 +38,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.3.2
+### 2.3.3
 
-- Fixing uncaught exception
+- Adding request header
 
 ## Donate
 Feel free to donate if you like the app :-)

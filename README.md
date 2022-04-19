@@ -40,6 +40,10 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.3.3
+
+- Adding request header
+
 ### 2.3.2
 
 - Fixing uncaught exception

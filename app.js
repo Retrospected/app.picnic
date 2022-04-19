@@ -231,7 +231,7 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"x-picnic-auth": Homey.ManagerSettings.get("x-picnic-auth"),
-				"x-picnic-agent": "10100; 2.3.0",
+				"x-picnic-agent": "10100; 2.3.3",
 				"x-picnic-did": "open.app.picnic.homey"
 			}
 		}

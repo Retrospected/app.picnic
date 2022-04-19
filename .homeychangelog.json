@@ -40,5 +40,8 @@
   },
   "2.3.2": {
     "en": "Fixing uncaught exception"
+  },
+  "2.3.3": {
+    "en": "Adding request header"
   }
 }
