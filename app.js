@@ -149,12 +149,12 @@ class Picnic extends Homey.App {
 								Homey.app.log("Auth token succesfully renewed.")
 								return Promise.resolve('Success');
 							} else {
-								return Promise.reject(new Error('Error: Re-authentication failed. Please check your credentials.'));
+								return Promise.reject('Error: Re-authentication failed. Please check your credentials.');
 							}
 						});
 					}
 					else {
-						return Promise.reject(new Error('Error: an unexpected error occured.'))
+						return Promise.reject('Error: an unexpected error occured.')
 					}
 				});
 			}
