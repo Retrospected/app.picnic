@@ -40,6 +40,10 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 2.3.1
+
+- Fixing uncaught exception
+
 ### 2.3.0
 
 - Updated order summary API
