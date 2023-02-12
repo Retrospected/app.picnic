@@ -2,6 +2,8 @@
 
 Doing your groceries at Picnic via Homey.
 
+Trigger flows based on various order events or add individual items or items based on a recipy to your shopping cart.
+
 ## Flow Triggers:
 Polling the status of your Picnic account every 5 minutes and providing trigger flowcards based on the following events:
 
@@ -37,6 +39,28 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 <b>Argument:</b> 'naam van het product'
 
 ## CHANGELOG
+
+### 2.3.0
+
+- Updated order summary API
+- Removed speech input code, no longer supported by Homey
+- Improved polling intervals based on order status
+
+### 2.2.5
+
+- Changing readme files to comply with Athom's standards
+
+### 2.2.4
+
+- Fixing bug that would expire your session after 2 weeks
+
+### 2.2.3
+
+- Adding order existence check
+
+### 2.2.2
+
+- Fixed order retrieval
 
 ### 2.2.1
 

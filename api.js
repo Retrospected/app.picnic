@@ -10,7 +10,9 @@ module.exports = [
     requires_authorization: true,
 
     fn: function( args, callback ) {
-      this.login( args.body.username, args.body.password, callback );
+      this.login( args.body.username, args.body.password, function (res) {
+        callback( null, res)
+      } );
     }
   },
   {

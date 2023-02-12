@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "2.2.1",
+  "version": "2.2.4",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "name": {
@@ -14,8 +14,7 @@
   ],
   "brandColor": "#e40613",
   "permissions": [
-    "homey:manager:speech-output",
-    "homey:manager:speech-input"
+    "homey:manager:speech-output"
   ],
   "images": {
     "large": "/assets/images/large.png",
@@ -43,6 +42,7 @@
           "en": "Add a product",
           "nl": "Voeg een product toe"
         },
+        "titleFormatted": { "en": "Add product [[product]]", "nl": "Voeg product [[product]] toe" },
         "args": [
           {
             "name": "product",
@@ -60,6 +60,7 @@
           "en": "Add a recipy",
           "nl": "Voeg recept toe"
         },
+        "titleFormatted": { "en": "Add recipy [[recipy]]", "nl": "Voeg recept [[recipy]] toe" },
         "args": [
           {
             "name": "recipy",

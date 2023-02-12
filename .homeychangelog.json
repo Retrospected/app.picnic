@@ -22,5 +22,20 @@
   },
   "2.2.1": {
     "en": "Fixed stupid typo in the Dutch translation"
+  },
+  "2.2.2": {
+    "en": "Fixed order retrieval"
+  },
+  "2.2.3": {
+    "en": "Adding order existence check"
+  },
+  "2.2.4": {
+    "en": "Fixing bug that would expire your session after 2 weeks"
+  },
+  "2.2.5": {
+    "en": "Changing readme files to comply with Athom's standards"
+  },
+  "2.3.0": {
+    "en": "Fixed API endpoint, removed speech input and improved polling intervals"
   }
 }

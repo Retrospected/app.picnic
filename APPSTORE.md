@@ -38,9 +38,11 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 2.2.1
+### 2.3.0
 
-- Fixed stupid typo in the Dutch translation
+- Updated order summary API
+- Removed speech input code, no longer supported by Homey
+- Improved polling intervals based on order status
 
 ## Donate
 Feel free to donate if you like the app :-)

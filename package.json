@@ -1,9 +1,10 @@
 {
   "name": "app.picnic",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Doing your groceries at Picnic via Homey.",
   "dependencies": {
-    "md5": "^2.2.1"
+    "md5": "^2.2.1",
+    "node-schedule": "^2.1.0"
   },
   "repository": {
     "type": "git",
