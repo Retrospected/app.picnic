@@ -208,7 +208,9 @@ class Picnic extends Homey.App {
 			timeout: 1000,
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
-				"Content-Type": "application/json; charset=UTF-8"
+				"Content-Type": "application/json; charset=UTF-8",
+				"client_id": "10100",
+				"device_id": "open.app.picnic.homey"
 			}
 		}
 
@@ -244,7 +246,8 @@ class Picnic extends Homey.App {
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"x-picnic-auth": this.homey.settings.get("x-picnic-auth")
+				"x-picnic-auth": this.homey.settings.get("x-picnic-auth"),
+				"x-picnic-did": "open.app.picnic.homey"
 			}
 		}
 
