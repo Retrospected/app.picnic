@@ -1,44 +1,21 @@
 'use strict';
 
-const Homey = require('homey');
-//TODO REWRITE SEE: https://apps-sdk-v3.developer.athom.com/tutorial-Web%20API.html
-module.exports = [
+module.exports = {
+  async login({ homey, body }) {
+    return await homey.app.login(body.username, body.password);
+  },
 
-  {
-    method:         'POST',
-    path:            '/login',
-    requires_authorization: true,
+  async status({ homey, query }) {
+    result = await homey.app.status();
+    return result
+  },
 
-    fn: function( args, callback ) {
-      this.login( args.body.username, args.body.password, function (res) {
-        callback( null, res)
-      } );
-    }
+  async orderStatus ({ homey, query }) {
+    return await homey.app.getOrderStatusFromSettings();
   },
-  {
-    method:         'GET',
-    path:            '/status',
-    requires_authorization: true,
-    fn: function( args, callback ) {
-      this.status( function (res) {
-        callback(null, res)
-      })
-    }
-  },
-  {
-    method:         'GET',
-    path:            '/order-status',
-    requires_authorization: true,
-    fn: function( args, callback ) {
-      callback(null,this.homey.settings.get("order_status"));
-    }
-  },
-  {
-    method:         'GET',
-    path:            '/reset-order-status',
-    requires_authorization: true,
-    fn: function( args, callback ) {
-      callback(null,this.homey.settings.set("order_status", ""));
-    }
+
+  async resetOrderStatus ({ homey, query }) {
+    await homey.app.resetOrderStatus();
+    return "OK";
   }
-]
+}

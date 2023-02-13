@@ -33,5 +33,45 @@
   },
   "bugs": {
     "url": "https://github.com/Retrospected/app.picnic/issues"
+  },
+  "platforms": [
+    "local"
+  ],
+  "homeyCommunityTopicId": 40843,
+  "source": "https://github.com/Retrospected/app.picnic",
+  "contributors": {
+    "developers": [
+      {
+        "name": "Sander Maas"
+      }
+    ]
+  },
+  "tags": {
+    "en": [
+      "groceries",
+      "supermarket"
+    ],
+    "nl": [
+      "boodschappen",
+      "supermarkt"
+    ]
+  },
+  "api": {
+    "login": {
+      "method": "POST",
+      "path": "/login"
+    },
+    "status": { 
+      "method": "GET",
+      "path": "/status"
+    },
+    "orderStatus": {
+      "method": "GET",
+      "path": "/orderstatus"
+    },
+    "resetOrderStatus": {
+      "method": "GET",
+      "path": "/resetorderstatus"
+    }
   }
 }
