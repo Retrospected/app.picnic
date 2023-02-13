@@ -6,8 +6,7 @@ module.exports = {
   },
 
   async status({ homey, query }) {
-    result = await homey.app.status();
-    return result
+    return await homey.app.getStatus();
   },
 
   async orderStatus ({ homey, query }) {
