@@ -312,7 +312,7 @@ class Picnic extends Homey.App {
 		   this.utils.getOrderStatus().then(content => {
 			if (DEBUG) {
 				this.debug("Order info received, raw json:")
-				this.debug(this.homey.settings.get("x-picnic-auth"))
+				//this.debug(this.homey.settings.get("x-picnic-auth"))
 				this.debug(content)
 			}
 			if (typeof content == 'undefined') return reject("No content received");
