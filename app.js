@@ -41,6 +41,7 @@ class Picnic extends Homey.App {
 		//this.homey.settings.unset("x-picnic-auth")
 		//this.homey.settings.unset("username")
 		//this.homey.settings.unset("password")
+		//this.homey.settings.set("order_status", "order_announced")
 
 		// retrieve initial order info
 		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
@@ -161,16 +162,12 @@ class Picnic extends Homey.App {
 						}
 						else if (orderEvent["event"] == 'groceries_delivered') {
 							this.debug("Order changed to groceries_delivered, firing trigger")
-							var delivery_time = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
-							var delivery_date = orderEvent["delivery_time"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
-							let delivery = { 'delivery_date': delivery_date, 'delivery_time': delivery_time }
-
-
-							this._groceriesDelivered.trigger(delivery)
+							this._groceriesDelivered.trigger()
 							this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
 							
 							this.homey.settings.unset("delivery_eta_start")
+							this.homey.settings.unset("delivery_eta_end")
 						}
 					}
 				})
@@ -324,7 +321,7 @@ class Picnic extends Homey.App {
 					this.debug("Retrieved status from picnic server: order_delivered")
 					this.homey.settings.set("order_status", "order_delivered")
 	
-					return resolve({ "event": "groceries_delivered", "delivery_time": JSON.parse(content)[0]["delivery_time"]["end"] })
+					return resolve({ "event": "groceries_delivered" })
 				}
 				else if (JSON.parse(content)[0]["delivery_time"] == undefined && JSON.parse(content)[0]["eta2"] != undefined && this.homey.settings.get("order_status") != "order_announced")
 				{
@@ -347,9 +344,10 @@ class Picnic extends Homey.App {
 				  this.debug("Order status didnt change, currently: "+this.homey.settings.get("order_status"))
 				}
 			}
-			else if (JSON.parse(content).length == 0){
-				this.debug("No order found, considering this as delivered, but not throwing the delivered trigger.")
+			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "order_delivered" && this.homey.settings.get("order_status") != undefined){
+				this.debug("No order found, considering this as delivered.")
 				this.homey.settings.set("order_status", "order_delivered")
+				return resolve({ "event": "groceries_delivered"})
 			}
 		})
 		.catch(error => {

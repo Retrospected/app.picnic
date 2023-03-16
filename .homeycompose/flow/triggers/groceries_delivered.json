@@ -3,25 +3,5 @@
     "title": {
       "en": "Groceries have been delivered",
       "nl": "Boodschappen zijn bezorgd"
-    },
-    "tokens": [
-      {
-        "name": "delivery_time",
-        "type": "string",
-        "title": {
-          "en": "delivery time",
-          "nl": "aflevertijd"
-        },
-        "example": "20:45"
-      },
-      {
-        "name": "delivery_date",
-        "type": "string",
-        "title": {
-          "en": "eta_date",
-          "nl": "afleverdatum"
-        },
-        "example": "2018-09-03"
-      }
-    ]   
+    }
 }

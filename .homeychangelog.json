@@ -49,5 +49,8 @@
   },
   "3.0.1": {
     "en": "Bugfix order announced end time"
+  },
+  "3.0.2": {
+    "en": "Bugfix in order delivered trigger, removed trigger tokens"
   }
 }
