@@ -38,9 +38,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 3.0.2
+### 3.0.3
 
-- Bugfix in order delivered trigger, removed trigger tokens
+- Improve the app description
 
 ## Donate
 Feel free to donate if you like the app :-)
