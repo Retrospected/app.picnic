@@ -12,7 +12,7 @@ var DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 12 // 12 hours
 var ORDERED_POLL_INTERVAL = 1000 * 60 * 60 * 1 // 1 hour
 var DELIVERY_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 
-const DEBUG = false
+const DEBUG = true
 
 var runningInterval;
 
@@ -85,7 +85,7 @@ class Picnic extends Homey.App {
 
 			if (this.homey.settings.getKeys().indexOf("delivery_eta_start") != -1) {
 				this.debug("30 minutes before delivery we will increase polling interval");
-				this.homey.app.createDeliverySchedule(this.homey.settings.get("delivery_eta_start"));
+				this.homey.app.createDeliverySchedule(this.homey.settings.get("delivery_eta_start"), this.homey.settings.get("delivery_eta_end"));
 			}
 
 			this.debug("Until delivery time, using ORDERED interval");
@@ -128,7 +128,6 @@ class Picnic extends Homey.App {
 					}
 					else {
 						this.debug("Order data succesfully retrieved, processing the following data:")
-						this.debug(orderEvent)
 						if (orderEvent["event"] == 'groceries_ordered') {
 							this.debug("Order changed to groceries_ordered, firing trigger")
 							var eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
@@ -149,10 +148,11 @@ class Picnic extends Homey.App {
 							var eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
 							let eta = { 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
-							
+
 							this._deliveryAnnouncedTrigger.trigger(eta)
 							this.debug("30 minutes before delivery we will increase polling interval");
 							this.homey.settings.set("delivery_eta_start", orderEvent["eta2_start"])
+							this.homey.settings.set("delivery_eta_end", orderEvent["eta2_end"])
 							this.createDeliverySchedule(orderEvent["eta2_start"], orderEvent["eta2_end"]);
 
 							this.debug("Until that time, using ORDERED interval");
@@ -207,17 +207,17 @@ class Picnic extends Homey.App {
 		this.debug("Increasing poll rate at " + deliveryStartMin30.toString())
 		
 		// scheduling increase of the polling rate 30min before the delivery time 
-		schedule.scheduleJob(deliveryStartMin30, function(){
+		schedule.scheduleJob(deliveryStartMin30, () => {
 			this.homey.app.changeInterval(DELIVERY_POLL_INTERVAL);
 		});
-
+		
 		// schedule beginning of delivery window trigger
-		schedule.scheduleJob(new Date(eta_start), function () {
+		schedule.scheduleJob(new Date(eta_start), () => {
 			this.homey.app._deliveryAnnouncedTriggerBeginTime.trigger()
 		});
-
+		
 		// schedule ending of delivery window trigger
-		schedule.scheduleJob(new Date(eta_end), function () {
+		schedule.scheduleJob(new Date(eta_end), () => {
 			this.homey.app._deliveryAnnouncedTriggerEndTime.trigger()
 		});
 	}
