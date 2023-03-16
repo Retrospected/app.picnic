@@ -1,3 +1,5 @@
-Doing your groceries at Picnic via Homey.
+Add individual items or multiple items based on a recipy to your shopping cart. Or trigger flows based on the different states of your order.
 
-Trigger flows based on various order events or add individual items or items based on a recipy to your shopping cart.
+After installing the app, login using your Picnic account via the app settings. Here you can also add your favorite recipies.
+
+Note: this app is not officially maintained by Picnic.
