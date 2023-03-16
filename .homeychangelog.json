@@ -52,5 +52,8 @@
   },
   "3.0.2": {
     "en": "Bugfix in order delivered trigger, removed trigger tokens"
+  },
+  "3.0.3": {
+    "en": "Improve the app description"
   }
 }
