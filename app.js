@@ -12,7 +12,7 @@ var DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 12 // 12 hours
 var ORDERED_POLL_INTERVAL = 1000 * 60 * 60 * 1 // 1 hour
 var DELIVERY_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 
-const DEBUG = true
+const DEBUG = false
 
 var runningInterval;
 
