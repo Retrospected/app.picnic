@@ -22,7 +22,7 @@ class Picnic extends Homey.App {
 		this.homey.log('Picnic is running...')
 
 		if (DEBUG) {
-			this.homey.log('DEBUG ENABLED')
+			this.debug('DEBUG ENABLED')
 			DEFAULT_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 			ORDERED_POLL_INTERVAL = 1000 * 30 * 1 // 30 seconds
 			DELIVERY_POLL_INTERVAL = 1000 * 10 * 1 // 10 seconds
@@ -70,17 +70,17 @@ class Picnic extends Homey.App {
 
 		let orderDeliveryDate = await this.homey.flow.createToken( 'order_deliverydate', {
 			type: 'date',
-			title: this.homey.__('tokens.order.deliverydate')
+			title: this.homey.__('tokens.delivery.date')
 		});
 
 		let orderDeliveryStartWindow = await this.homey.flow.createToken( 'order_deliverystartwindow', {
 			type: 'date',
-			title: this.homey.__('tokens.order.deliverystartwindow')
+			title: this.homey.__('tokens.delivery.startwindow')
 		});
 
 		let orderDeliveryEndWindow = await this.homey.flow.createToken( 'order_deliveryendwindow', {
 			type: 'date',
-			title: this.homey.__('tokens.order.deliveryendwindow')
+			title: this.homey.__('tokens.delivery.endwindow')
 		});
 
 		this.orderStatus = orderStatus;
