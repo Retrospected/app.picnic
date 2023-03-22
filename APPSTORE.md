@@ -38,9 +38,9 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
-### 3.0.3
+### 3.1.0
 
-- Improve the app description
+- Adding global Picnic tokens
 
 ## Donate
 Feel free to donate if you like the app :-)

@@ -55,5 +55,8 @@
   },
   "3.0.3": {
     "en": "Improve the app description"
+  },
+  "3.1.0": {
+    "en": "Adding global Picnic tokens"
   }
 }

@@ -16,7 +16,7 @@
       },
       {
         "name": "eta_start",
-        "type": "string",
+        "type": "date",
         "title": {
           "en": "eta begin"
         },
@@ -24,7 +24,7 @@
       },
       {
         "name": "eta_end",
-        "type": "string",
+        "type": "date",
         "title": {
           "en": "eta end"
         },
@@ -32,7 +32,7 @@
       },
       {
         "name": "eta_date",
-        "type": "string",
+        "type": "date",
         "title": {
           "en": "eta date"
         },
