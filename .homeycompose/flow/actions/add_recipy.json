@@ -1,0 +1,18 @@
+{
+    "id": "add_recipy",
+    "title": {
+      "en": "Add a recipy",
+      "nl": "Voeg recept toe"
+    },
+    "titleFormatted": { "en": "Add recipy [[recipy]]", "nl": "Voeg recept [[recipy]] toe" },
+    "args": [
+      {
+        "name": "recipy",
+        "type": "autocomplete",
+        "placeholder": {
+          "en": "recipy",
+          "nl": "recept"
+        }
+      }
+    ]
+  }

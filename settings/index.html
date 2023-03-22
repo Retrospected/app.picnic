@@ -167,7 +167,7 @@
             statusElement.innerHTML = result;
           });
 
-          Homey.api('GET', '/order-status', null, function ( err, result ) {
+          Homey.api('GET', '/orderstatus', null, function ( err, result ) {
             if ( err ) return Homey.alert( err );
             orderStatusElement.innerHTML = result;
           });
@@ -179,7 +179,7 @@
 
           resetOrderStatusElement.addEventListener('click', function(e) {
 
-            Homey.api('GET', '/reset-order-status', function( err, result ) {
+            Homey.api('GET', '/resetorderstatus', function( err, result ) {
               if( err ) return Homey.alert(err);
               window.location.reload();
             });

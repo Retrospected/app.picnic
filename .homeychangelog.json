@@ -37,5 +37,23 @@
   },
   "2.3.0": {
     "en": "Fixed API endpoint, removed speech input and improved polling intervals"
+  },
+  "2.3.2": {
+    "en": "Fixing uncaught exception"
+  },
+  "2.3.3": {
+    "en": "Adding request header"
+  },
+  "3.0.0": {
+    "en": "Migrate to SDK3"
+  },
+  "3.0.1": {
+    "en": "Bugfix order announced end time"
+  },
+  "3.0.2": {
+    "en": "Bugfix in order delivered trigger, removed trigger tokens"
+  },
+  "3.0.3": {
+    "en": "Improve the app description"
   }
 }

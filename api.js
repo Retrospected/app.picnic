@@ -1,44 +1,20 @@
 'use strict';
 
-const Homey = require('homey');
-
-module.exports = [
-
-  {
-    method:         'POST',
-    path:            '/login',
-    requires_authorization: true,
-
-    fn: function( args, callback ) {
-      Homey.app.login( args.body.username, args.body.password, function (res) {
-        callback( null, res)
-      } );
-    }
+module.exports = {
+  async login({ homey, body }) {
+    return await homey.app.login(body.username, body.password);
   },
-  {
-    method:         'GET',
-    path:            '/status',
-    requires_authorization: true,
-    fn: function( args, callback ) {
-      Homey.app.status( function (res) {
-        callback(null, res)
-      })
-    }
+
+  async status({ homey, query }) {
+    return await homey.app.getStatus();
   },
-  {
-    method:         'GET',
-    path:            '/order-status',
-    requires_authorization: true,
-    fn: function( args, callback ) {
-      callback(null,Homey.ManagerSettings.get("order_status"));
-    }
+
+  async orderStatus ({ homey, query }) {
+    return await homey.app.getOrderStatusFromSettings();
   },
-  {
-    method:         'GET',
-    path:            '/reset-order-status',
-    requires_authorization: true,
-    fn: function( args, callback ) {
-      callback(null,Homey.ManagerSettings.set("order_status", ""));
-    }
+
+  async resetOrderStatus ({ homey, query }) {
+    await homey.app.resetOrderStatus();
+    return "OK";
   }
-]
+}

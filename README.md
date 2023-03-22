@@ -40,6 +40,30 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 
 ## CHANGELOG
 
+### 3.0.3
+
+- Improve the app description
+
+### 3.0.2
+
+- Bugfix in order delivered trigger, removed trigger tokens
+
+### 3.0.1
+
+- Bugfix order announced end time
+
+### 3.0.0
+
+- Migrate to SDK3
+
+### 2.3.3
+
+- Adding request header
+
+### 2.3.2
+
+- Fixing uncaught exception
+
 ### 2.3.0
 
 - Updated order summary API
