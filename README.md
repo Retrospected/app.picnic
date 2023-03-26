@@ -18,25 +18,21 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
   - eta end, returning the end of the 20 minutes delivery timeframe
 - Start of the time frame when the delivery is announced
 - End of the time frame when the delivery is announced
-- Your groceries have been delivered, with tokens:
-  - delivery date
-  - delivery time
+- Your groceries have been delivered
 
 ## Flow Actions:
 - Adding a product to your basket based on the name of the product passed as an argument.
 - Adding products based on a recipe as configured via the settings page.
 - Adding products based on a randomly picked recipe.
 
-### Speech triggers:
-##### English
-<b>Trigger:</b> Add (a) product<br>
-<b>Response:</b> Which product would you like to add?<br>
-<b>Argument:</b> 'name your product'
+## Global Tokens:
+The following order specific global tokens are available:
 
-##### Dutch
-<b>Trigger:</b> Voeg (een) product toe<br>
-<b>Response:</b> Welk product wil je toevoegen?<br>
-<b>Argument:</b> 'naam van het product'
+- Order status
+- Order costs
+- Delivery status
+- Start of the delivery window
+- End of the delivery window
 
 ## CHANGELOG
 
