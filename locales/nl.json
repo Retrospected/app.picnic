@@ -10,14 +10,9 @@
         "order-status-button": "bestelling status",
         "save-button": "Wijzigingen opslaan"
     },
-    "speech": {
-        "which_product": "Welk product wil je toevoegen?",
-        "pre_added": "Ik heb",
-        "post_added": "toegevoegd."
-    },    
     "tokens": {
         "order": {
-            "status": "Status van bestelling",
+            "status": "Status van de bestelling",
             "price": "Bestelkosten"
         },
         "delivery": {

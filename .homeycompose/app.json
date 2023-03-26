@@ -14,9 +14,6 @@
     "internet"
   ],
   "brandColor": "#e40613",
-  "permissions": [
-    "homey:manager:speech-output"
-  ],
   "images": {
     "large": "/assets/images/large.png",
     "small": "/assets/images/small.png"

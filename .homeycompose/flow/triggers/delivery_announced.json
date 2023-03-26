@@ -7,7 +7,7 @@
     "tokens": [
       {
         "name": "eta_start",
-        "type": "date",
+        "type": "string",
         "title": {
           "en": "eta begin"
         },
@@ -15,7 +15,7 @@
       },
       {
         "name": "eta_end",
-        "type": "date",
+        "type": "string",
         "title": {
           "en": "eta end"
         },
@@ -23,7 +23,7 @@
       },
       {
         "name": "eta_date",
-        "type": "date",
+        "type": "string",
         "title": {
           "en": "eta date"
         },

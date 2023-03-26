@@ -26,6 +26,11 @@ class Picnic extends Homey.App {
 			DEFAULT_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 			ORDERED_POLL_INTERVAL = 1000 * 30 * 1 // 30 seconds
 			DELIVERY_POLL_INTERVAL = 1000 * 10 * 1 // 10 seconds
+
+			this.debug("ORDER STATUS: "+this.homey.settings.get("order_status"))
+			this.debug("PICNIC USER: "+this.homey.settings.get("username"))
+			//this.debug("PICNIC PASS: "+this.homey.settings.get("password"))
+			//this.debug("PICNIC JWT: "+this.homey.settings.get("x-picnic-auth"))
 		}
 
 		this.actions = new actions({homey: this.homey});
@@ -69,17 +74,17 @@ class Picnic extends Homey.App {
 		});
 
 		let orderDeliveryDate = await this.homey.flow.createToken( 'order_deliverydate', {
-			type: 'date',
+			type: 'string',
 			title: this.homey.__('tokens.delivery.date')
 		});
 
 		let orderDeliveryStartWindow = await this.homey.flow.createToken( 'order_deliverystartwindow', {
-			type: 'date',
+			type: 'string',
 			title: this.homey.__('tokens.delivery.startwindow')
 		});
 
 		let orderDeliveryEndWindow = await this.homey.flow.createToken( 'order_deliveryendwindow', {
-			type: 'date',
+			type: 'string',
 			title: this.homey.__('tokens.delivery.endwindow')
 		});
 
@@ -89,12 +94,35 @@ class Picnic extends Homey.App {
 		this.orderDeliveryStartWindow = orderDeliveryStartWindow;
 		this.orderDeliveryEndWindow = orderDeliveryEndWindow;
 
-		// not sure if this will be a problem if the homey setting is 'undefined'
-		await this.orderStatus.setValue(this.homey.settings.get("order_status"));
-		await this.orderPrice.setValue(this.homey.settings.get("order_price"));
-		await this.orderDeliveryDate.setValue(this.homey.settings.get("delivery_date"));
-		await this.orderDeliveryStartWindow.setValue(this.homey.settings.get("delivery_eta_start"));
-		await this.orderDeliveryEndWindow.setValue(this.homey.settings.get("delivery_eta_end"));
+		if (this.homey.settings.get("order_status") !== null) {
+			await this.orderStatus.setValue(this.homey.settings.get("order_status"));
+		} else {
+			await this.orderStatus.setValue("")
+		}
+
+		if (this.homey.settings.get("order_price") !== null) { 
+			await this.orderPrice.setValue(this.homey.settings.get("order_price"));
+		} else {
+			await this.orderPrice.setValue(0)
+		}
+
+		if (this.homey.settings.get("delivery_date") !== null) {
+			await this.orderDeliveryDate.setValue(this.homey.settings.get("delivery_date"));
+		} else {
+			await this.orderDeliveryDate.setValue("")
+		}
+
+		if (this.homey.settings.get("delivery_eta_start") !== null) {
+			await this.orderDeliveryStartWindow.setValue(this.homey.settings.get("delivery_eta_start"));
+		} else {
+			await this.orderDeliveryStartWindow.setValue("")
+		}
+
+		if (this.homey.settings.get("delivery_eta_end") !== null) {
+			await this.orderDeliveryEndWindow.setValue(this.homey.settings.get("delivery_eta_end"));
+		} else {
+			await this.orderDeliveryEndWindow.setValue("")
+		}
 	}
 
 	async _initFlowTriggers() {
@@ -173,20 +201,20 @@ class Picnic extends Homey.App {
 						this.debug("Order_status has changed! Changing tokens, settings and firing the trigger accordingly.")
 						if (orderEvent["event"] == 'groceries_ordered') {
 							this.debug("Order changed to groceries_ordered, firing trigger")
-							const eta_start = orderEvent["eta1_start"]
-							const eta_end = orderEvent["eta1_end"]
-							const eta_date = orderEvent["eta1_start"]
+							const eta_start = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							const eta_end = orderEvent["eta1_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							const eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 							const price = orderEvent["price"]
 
 							const data = { 'price': price,  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
 							
 							this._groceriesOrderedTrigger.trigger(data)
 
-							this.orderPrice.setToken(price)
-							this.orderStatus.setToken("groceries_ordered")
-							this.orderDeliveryDate.setToken(eta_date)
-							this.orderDeliveryStartWindow.setToken(eta_start)
-							this.orderDeliveryEndWindow.setToken(eta_end)
+							this.orderPrice.setValue(price)
+							this.orderStatus.setValue("groceries_ordered")
+							this.orderDeliveryDate.setValue(eta_date)
+							this.orderDeliveryStartWindow.setValue(eta_start)
+							this.orderDeliveryEndWindow.setValue(eta_end)
 
 							this.homey.settings.set("order_status", "groceries_ordered")
 							this.homey.settings.set("order_price", price)
@@ -199,18 +227,18 @@ class Picnic extends Homey.App {
 						}
 						else if (orderEvent["event"] == 'delivery_announced') {
 							this.debug("Order changed to delivery_announced, firing trigger")
-							const eta2_start = orderEvent["eta2_start"]
-							const eta2_end = orderEvent["eta2_end"]
-							const eta_date = orderEvent["eta2_start"]
+							const eta2_start = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							const eta2_end = orderEvent["eta2_end"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+							const eta_date = orderEvent["eta2_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 
 							const eta = { 'eta_start': eta2_start, 'eta_end': eta2_end, 'eta_date': eta_date }
 
 							this._deliveryAnnouncedTrigger.trigger(eta)
 
-							this.orderStatus.setToken("delivery_announced")
-							this.orderDeliveryDate.setToken(eta_date)
-							this.orderDeliveryStartWindow.setToken(eta2_start)
-							this.orderDeliveryEndWindow.setToken(eta2_end)
+							this.orderStatus.setValue("delivery_announced")
+							this.orderDeliveryDate.setValue(eta_date)
+							this.orderDeliveryStartWindow.setValue(eta2_start)
+							this.orderDeliveryEndWindow.setValue(eta2_end)
 						
 							this.homey.settings.set("order_status", "delivery_announced")
 							this.homey.settings.set("delivery_eta_start", eta2_start)
@@ -229,11 +257,11 @@ class Picnic extends Homey.App {
 
 							this._groceriesDelivered.trigger()
 
-							this.orderStatus.setToken("groceries_deliverd")
-							this.orderPrice.setToken(0)
-							this.orderDeliveryDate.setToken("")
-							this.orderDeliveryStartWindow.setToken("")
-							this.orderDeliveryEndWindow.setToken("")
+							this.orderStatus.setValue("groceries_deliverd")
+							this.orderPrice.setValue(0)
+							this.orderDeliveryDate.setValue("")
+							this.orderDeliveryStartWindow.setValue("")
+							this.orderDeliveryEndWindow.setValue("")
 
 							this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
 							
@@ -273,7 +301,7 @@ class Picnic extends Homey.App {
 	}
 
 	createDeliverySchedule(eta_start, eta_end) {
-		const deliveryStartMin30 = new Date(eta_start - 1000*60*30);
+		const deliveryStartMin30 = new Date(new Date(eta_start) - 1000*60*30);
 		this.debug("Increasing poll rate at " + deliveryStartMin30.toString())
 		
 		// scheduling increase of the polling rate 30min before the delivery time 
@@ -282,12 +310,12 @@ class Picnic extends Homey.App {
 		});
 		
 		// schedule beginning of delivery window trigger
-		schedule.scheduleJob(eta_start, () => {
+		schedule.scheduleJob(new Date(eta_start), () => {
 			this.homey.app._deliveryAnnouncedTriggerBeginTime.trigger()
 		});
 		
 		// schedule ending of delivery window trigger
-		schedule.scheduleJob(eta_end, () => {
+		schedule.scheduleJob(new Date(eta_end), () => {
 			this.homey.app._deliveryAnnouncedTriggerEndTime.trigger()
 		});
 	}

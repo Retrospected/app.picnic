@@ -10,11 +10,6 @@
         "order-status-button": "order status",
         "save-button": "Save changes"
     },
-    "speech": {
-        "which_product": "Which product would you like to add?",
-        "pre_added": "I have added",
-        "post_added": "."
-    },
     "tokens": {
         "order": {
             "status": "Order status",
