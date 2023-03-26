@@ -183,8 +183,8 @@ class Picnic extends Homey.App {
 
 	async pollOrder() {
 		return new Promise((resolve, reject) => {
-			this.debug("Polling for new order info")
 			if (this.homey.settings.getKeys().indexOf("x-picnic-auth") > -1 && this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password") > -1) {
+				this.debug("Polling for new order info")
 				this.getOrderStatus().then(orderEvent => {
 					this.debug("Processing order info")
 					if ( orderEvent.toString() == "Error: unauthorized" ) {
@@ -281,6 +281,7 @@ class Picnic extends Homey.App {
 								this.debug("Auth token succesfully renewed.")
 								return Promise.resolve('Success');
 							} else {
+								this.debug("ERROR: Re-authentication failed. Please check your credentials.")
 								return Promise.reject('ERROR: Re-authentication failed. Please check your credentials.');
 							}
 						});
@@ -290,6 +291,11 @@ class Picnic extends Homey.App {
 						return Promise.reject('Error: an unexpected error occured.')
 					}
 				});
+			} else if (this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password")) {
+				this.debug("No JWT token found, so trying to retrieve one by authenticating")
+				this.login(this.homey.settings.getKeys().indexOf("username"), this.homey.settings.getKeys().indexOf("password"))
+			} else {
+				this.debug("Not polling for new order info due to insufficient authentication details.")
 			}
 		});
 	}
@@ -353,11 +359,14 @@ class Picnic extends Homey.App {
 					resolve("success");
 				}
 				else {
+					this.debug("ERROR: Authentication failed.")
+					this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
 					resolve('Problem with request or authentication failed.');
 				}
 			});
 
 			req.on('error', (e) => {
+				this.debug("ERROR: Problem with request or authentication failed.")
 				resolve('Problem with request or authentication failed.');
 			});
 
@@ -446,7 +455,8 @@ class Picnic extends Homey.App {
 			}
 		})
 		.catch(error => {
-		  reject(error)
+			this.debug("ERROR: Order retrieval failed")
+		  	reject(error)
 		})
 	  })
 	};
