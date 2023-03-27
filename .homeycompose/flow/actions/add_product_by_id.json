@@ -1,0 +1,18 @@
+{
+    "id": "add_product_by_id",
+    "title": {
+      "en": "Add a product using its id",
+      "nl": "Voeg een product toe op basis van het id"
+    },
+    "titleFormatted": { "en": "Add product with id [[product_id]]", "nl": "Voeg product met id [[product_id]] toe" },
+    "args": [
+      {
+        "name": "product_id",
+        "type": "number",
+        "placeholder": {
+          "en": "11470291",
+          "nl": "11470291"
+        }
+      }
+    ]
+  }
