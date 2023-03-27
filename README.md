@@ -36,6 +36,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.2.0
+
+- Adding order condition
+
 ### 3.1.0
 
 - Adding global Picnic tokens

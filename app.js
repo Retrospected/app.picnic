@@ -1,11 +1,12 @@
 'use strict';
 
 const Homey = require('homey');
-const actions = require('./lib/actions.js')
-const utils = require('./lib/utils.js')
+const actions = require('./lib/actions.js');
+const conditions = require('./lib/conditions.js')
+const utils = require('./lib/utils.js');
 
-var http = require("https")
-var md5 = require("md5")
+var http = require("https");
+var md5 = require("md5");
 const schedule = require('node-schedule');
 
 var DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 12 // 12 hours
@@ -36,6 +37,9 @@ class Picnic extends Homey.App {
 		this.actions = new actions({homey: this.homey});
 		this.actions.onInit();
 
+		this.conditions = new conditions({homey: this.homey});
+		this.conditions.onInit();
+
 		this.utils = new utils({homey: this.homey});
 
 		this.homey.settings.set("additemLock", false)
@@ -57,7 +61,6 @@ class Picnic extends Homey.App {
 
 		this._initAppTokens();
 		this._initFlowTriggers();
-		this._initFlowConditions();
 		this._initTimers();
 	}
 
@@ -124,19 +127,6 @@ class Picnic extends Homey.App {
 		} else {
 			await this.orderDeliveryEndWindow.setValue("")
 		}
-	}
-
-	async _initFlowConditions() {
-		this._groceriesOrderedCondition = this.homey.flow
-		.getConditionCard('groceries_ordered')
-		.registerRunListener(async () => {
-			const order_status = this.homey.settings.get("order_status");
-			if (order_status == "groceries_ordered" || order_status == "delivery_announced"){
-				return true;
-			} else {
-				return false;
-			}
-		});
 	}
 
 	async _initFlowTriggers() {

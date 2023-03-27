@@ -58,5 +58,8 @@
   },
   "3.1.0": {
     "en": "Adding global Picnic tokens"
+  },
+  "3.2.0": {
+    "en": "Adding order condition"
   }
 }
