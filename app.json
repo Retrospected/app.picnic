@@ -172,6 +172,17 @@
         ]
       }
     ],
+    "conditions": [
+      {
+        "id": "groceries_ordered",
+        "title": {
+          "en": "Groceries !{{have been|have not been}} ordered"
+        },
+        "hint": {
+          "en": "Checks if an order with Picnic has been placed."
+        }
+      }
+    ],
     "actions": [
       {
         "id": "add_product",

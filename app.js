@@ -57,6 +57,7 @@ class Picnic extends Homey.App {
 
 		this._initAppTokens();
 		this._initFlowTriggers();
+		this._initFlowConditions();
 		this._initTimers();
 	}
 
@@ -123,6 +124,19 @@ class Picnic extends Homey.App {
 		} else {
 			await this.orderDeliveryEndWindow.setValue("")
 		}
+	}
+
+	async _initFlowConditions() {
+		this._groceriesOrderedCondition = this.homey.flow
+		.getConditionCard('groceries_ordered')
+		.registerRunListener(async () => {
+			const order_status = this.homey.settings.get("order_status");
+			if (order_status == "groceries_ordered" || order_status == "delivery_announced"){
+				return true;
+			} else {
+				return false;
+			}
+		});
 	}
 
 	async _initFlowTriggers() {
