@@ -36,6 +36,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.2.1
+
+- Bugfix in start and end window trigger
+
 ### 3.2.0
 
 - Adding order condition

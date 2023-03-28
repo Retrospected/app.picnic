@@ -61,5 +61,8 @@
   },
   "3.2.0": {
     "en": "Adding order condition"
+  },
+  "3.2.1": {
+    "en": "Bugfix in start and end window trigger"
   }
 }
