@@ -1,6 +1,6 @@
 {
   "name": "app.picnic",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Doing your groceries at Picnic via Homey.",
   "dependencies": {
     "md5": "^2.2.1",
