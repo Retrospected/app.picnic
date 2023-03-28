@@ -113,13 +113,15 @@ class Picnic extends Homey.App {
 		}
 
 		if (this.homey.settings.get("delivery_eta_start") !== null) {
-			await this.orderDeliveryStartWindow.setValue(this.homey.settings.get("delivery_eta_start"));
+			const delivery_eta_start = this.homey.settings.get("delivery_eta_start").replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+			await this.orderDeliveryStartWindow.setValue(delivery_eta_start);
 		} else {
 			await this.orderDeliveryStartWindow.setValue("")
 		}
 
 		if (this.homey.settings.get("delivery_eta_end") !== null) {
-			await this.orderDeliveryEndWindow.setValue(this.homey.settings.get("delivery_eta_end"));
+			const delivery_eta_end = this.homey.settings.get("delivery_eta_end").replace(/T/, ' ').replace(/\..+/, '').split(' ')[1].slice(0, -3)
+			await this.orderDeliveryEndWindow.setValue(delivery_eta_end);
 		} else {
 			await this.orderDeliveryEndWindow.setValue("")
 		}
@@ -218,8 +220,8 @@ class Picnic extends Homey.App {
 
 							this.homey.settings.set("order_status", "groceries_ordered")
 							this.homey.settings.set("order_price", price)
-							this.homey.settings.set("delivery_eta_start", eta_start)
-							this.homey.settings.set("delivery_eta_end", eta_end)
+							this.homey.settings.set("delivery_eta_start", orderEvent["eta1_start"])
+							this.homey.settings.set("delivery_eta_end", orderEvent["eta1_end"])
 							this.homey.settings.set("delivery_date", eta_date)
 							
 							this.debug("Updating poll interval to "+ORDERED_POLL_INTERVAL/1000/60+" minutes");
@@ -241,12 +243,12 @@ class Picnic extends Homey.App {
 							this.orderDeliveryEndWindow.setValue(eta2_end)
 						
 							this.homey.settings.set("order_status", "delivery_announced")
-							this.homey.settings.set("delivery_eta_start", eta2_start)
-							this.homey.settings.set("delivery_eta_end", eta2_end)
+							this.homey.settings.set("delivery_eta_start", orderEvent["eta2_start"])
+							this.homey.settings.set("delivery_eta_end", orderEvent["eta2_end"])
 							this.homey.settings.set("delivery_date", eta_date)
 
 							this.debug("30 minutes before delivery we will increase polling interval");
-							this.createDeliverySchedule(eta2_start, eta2_end);
+							this.createDeliverySchedule(orderEvent["eta2_start"], orderEvent["eta2_end"]);
 
 							this.debug("Until that time, using ORDERED interval");
 							this.homey.app.changeInterval(ORDERED_POLL_INTERVAL);
