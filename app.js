@@ -59,6 +59,16 @@ class Picnic extends Homey.App {
 			this.pollOrder();
 		}
 
+		// conversion order_status code for all versions before 3.2.1
+		// this prevents unnecessary triggers being fired when <3.2.1 is upgraded to 3.2.2 and above
+		if (this.homey.settings.get("order_status") == "order_announced") {
+			this.homey.settings.set("order_status", "delivery_announced");
+		} else if (this.homey.settings.get("order_status") == "order_delivered") {
+			this.homey.settings.set("order_status", "groceries_delivered");
+		} else if (this.homey.settings.get("order_status") == "order_placed") {
+			this.homey.settings.set("order_status", "groceries_ordered");
+		}
+
 		this._initAppTokens();
 		this._initFlowTriggers();
 		this._initTimers();

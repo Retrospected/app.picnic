@@ -64,5 +64,8 @@
   },
   "3.2.1": {
     "en": "Bugfix in start and end window trigger"
+  },
+  "3.2.2": {
+    "en": "Bugfix to prevent unnecessary firing of triggers after update"
   }
 }

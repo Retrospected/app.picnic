@@ -36,6 +36,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.2.2
+
+- Bugfix to prevent unnecessary firing of triggers after update
+
 ### 3.2.1
 
 - Bugfix in start and end window trigger
