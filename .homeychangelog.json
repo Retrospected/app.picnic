@@ -67,5 +67,8 @@
   },
   "3.2.2": {
     "en": "Bugfix to prevent unnecessary firing of triggers after update"
+  },
+  "3.2.3": {
+    "en": "Fixed typo in global token"
   }
 }

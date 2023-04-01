@@ -273,7 +273,7 @@ class Picnic extends Homey.App {
 
 							this._groceriesDelivered.trigger()
 
-							this.orderStatus.setValue("groceries_deliverd")
+							this.orderStatus.setValue("groceries_delivered")
 							this.orderPrice.setValue(0)
 							this.orderDeliveryDate.setValue("")
 							this.orderDeliveryStartWindow.setValue("")
