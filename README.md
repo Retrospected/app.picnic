@@ -1,11 +1,15 @@
 # Picnic app for Homey
 
-Doing your groceries at Picnic via Homey.
+Connect Picnic with Homey.
 
-Trigger flows based on various order events or add individual items or items based on a recipy to your shopping cart.
+Add individual items or multiple items based on a recipy to your shopping cart. Or trigger flows based on the different states of your order.
 
-## Flow Triggers:
-Polling the status of your Picnic account every 5 minutes and providing trigger flowcards based on the following events:
+## Instructions
+
+After installing the app, login using your Picnic account via the app settings. Here you can also add your favorite recipes.
+
+## Flow Triggers
+Polling the status of your Picnic account and providing trigger flowcards based on the following events:
 
 - Groceries have been ordered, with tokens:
   - price (in euro)
@@ -18,27 +22,47 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
   - eta end, returning the end of the 20 minutes delivery timeframe
 - Start of the time frame when the delivery is announced
 - End of the time frame when the delivery is announced
-- Your groceries have been delivered, with tokens:
-  - delivery date
-  - delivery time
+- Your groceries have been delivered
 
-## Flow Actions:
+## Flow Actions
 - Adding a product to your basket based on the name of the product passed as an argument.
 - Adding products based on a recipe as configured via the settings page.
 - Adding products based on a randomly picked recipe.
 
-### Speech triggers:
-##### English
-<b>Trigger:</b> Add (a) product<br>
-<b>Response:</b> Which product would you like to add?<br>
-<b>Argument:</b> 'name your product'
+## Global Tokens
+The following order specific global tokens are available:
 
-##### Dutch
-<b>Trigger:</b> Voeg (een) product toe<br>
-<b>Response:</b> Welk product wil je toevoegen?<br>
-<b>Argument:</b> 'naam van het product'
+- Order status
+- Order costs
+- Delivery status
+- Start of the delivery window
+- End of the delivery window
 
 ## CHANGELOG
+
+### 3.2.4
+
+- Updated Homey community URL
+
+### 3.2.3
+
+- Fixed typo in global token
+
+### 3.2.2
+
+- Bugfix to prevent unnecessary firing of triggers after update
+
+### 3.2.1
+
+- Bugfix in start and end window trigger
+
+### 3.2.0
+
+- Adding order condition
+
+### 3.1.0
+
+- Adding global Picnic tokens
 
 ### 3.0.3
 

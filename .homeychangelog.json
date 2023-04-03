@@ -55,5 +55,23 @@
   },
   "3.0.3": {
     "en": "Improve the app description"
+  },
+  "3.1.0": {
+    "en": "Adding global Picnic tokens"
+  },
+  "3.2.0": {
+    "en": "Adding order condition"
+  },
+  "3.2.1": {
+    "en": "Bugfix in start and end window trigger"
+  },
+  "3.2.2": {
+    "en": "Bugfix to prevent unnecessary firing of triggers after update"
+  },
+  "3.2.3": {
+    "en": "Fixed typo in global token"
+  },
+  "3.2.4": {
+    "en": "Updated Homey community URL"
   }
 }

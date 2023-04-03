@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "app.picnic",
-  "version": "3.0.3",
+  "version": "3.2.4",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "name": {
@@ -15,9 +15,6 @@
     "internet"
   ],
   "brandColor": "#e40613",
-  "permissions": [
-    "homey:manager:speech-output"
-  ],
   "images": {
     "large": "/assets/images/large.png",
     "small": "/assets/images/small.png"
@@ -39,7 +36,7 @@
   "platforms": [
     "local"
   ],
-  "homeyCommunityTopicId": 40843,
+  "homeyCommunityTopicId": 78811,
   "source": "https://github.com/Retrospected/app.picnic",
   "contributors": {
     "developers": [
@@ -107,7 +104,7 @@
             "title": {
               "en": "eta date"
             },
-            "example": "2018-09-03"
+            "example": "2023-03-28"
           }
         ]
       },
@@ -170,9 +167,22 @@
             "title": {
               "en": "eta date"
             },
-            "example": "2018-09-03"
+            "example": "2023-03-28"
           }
         ]
+      }
+    ],
+    "conditions": [
+      {
+        "id": "groceries_ordered",
+        "title": {
+          "en": "Groceries !{{have been|have not been}} ordered",
+          "nl": "Boodschappen !{{zijn besteld|zijn niet besteld}}"
+        },
+        "hint": {
+          "en": "Check if there is an active order.",
+          "nl": "Kijk of er een actieve bestelling is."
+        }
       }
     ],
     "actions": [
@@ -200,18 +210,18 @@
       {
         "id": "add_random_recipy",
         "title": {
-          "en": "Add a random recipy",
+          "en": "Add a random recipe",
           "nl": "Voeg willekeurig recept toe"
         }
       },
       {
         "id": "add_recipy",
         "title": {
-          "en": "Add a recipy",
+          "en": "Add a recipe",
           "nl": "Voeg recept toe"
         },
         "titleFormatted": {
-          "en": "Add recipy [[recipy]]",
+          "en": "Add recipe [[recipy]]",
           "nl": "Voeg recept [[recipy]] toe"
         },
         "args": [
@@ -219,7 +229,7 @@
             "name": "recipy",
             "type": "autocomplete",
             "placeholder": {
-              "en": "recipy",
+              "en": "recipe",
               "nl": "recept"
             }
           }
