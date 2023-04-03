@@ -1,11 +1,15 @@
 # Picnic app for Homey
 
-Doing your groceries at Picnic via Homey.
+Connect Picnic with Homey.
 
-Trigger flows based on various order events or add individual items or items based on a recipy to your shopping cart.
+Add individual items or multiple items based on a recipy to your shopping cart. Or trigger flows based on the different states of your order.
 
-## Flow Triggers:
-Polling the status of your Picnic account every 5 minutes and providing trigger flowcards based on the following events:
+## Instructions
+
+After installing the app, login using your Picnic account via the app settings. Here you can also add your favorite recipes.
+
+## Flow Triggers
+Polling the status of your Picnic account and providing trigger flowcards based on the following events:
 
 - Groceries have been ordered, with tokens:
   - price (in euro)
@@ -20,12 +24,12 @@ Polling the status of your Picnic account every 5 minutes and providing trigger 
 - End of the time frame when the delivery is announced
 - Your groceries have been delivered
 
-## Flow Actions:
+## Flow Actions
 - Adding a product to your basket based on the name of the product passed as an argument.
 - Adding products based on a recipe as configured via the settings page.
 - Adding products based on a randomly picked recipe.
 
-## Global Tokens:
+## Global Tokens
 The following order specific global tokens are available:
 
 - Order status
@@ -35,6 +39,10 @@ The following order specific global tokens are available:
 - End of the delivery window
 
 ## CHANGELOG
+
+### 3.2.4
+
+- Updated Homey community URL
 
 ### 3.2.3
 

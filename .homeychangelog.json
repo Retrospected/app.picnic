@@ -70,5 +70,8 @@
   },
   "3.2.3": {
     "en": "Fixed typo in global token"
+  },
+  "3.2.4": {
+    "en": "Updated Homey community URL"
   }
 }
