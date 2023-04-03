@@ -73,5 +73,8 @@
   },
   "3.2.4": {
     "en": "Updated Homey community URL"
+  },
+  "3.2.5": {
+    "en": "Bugfix adding product IDs as String upon API change"
   }
 }
