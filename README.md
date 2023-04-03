@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.2.5
+
+- Bugfix adding product IDs as String upon API change
+
 ### 3.2.4
 
 - Updated Homey community URL
