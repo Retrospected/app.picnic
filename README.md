@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.2.6
+
+- Reduce default poll interval to prevent missing order trigger
+
 ### 3.2.5
 
 - Bugfix adding product IDs as String upon API change

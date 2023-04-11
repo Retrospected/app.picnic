@@ -76,5 +76,8 @@
   },
   "3.2.5": {
     "en": "Bugfix adding product IDs as String upon API change"
+  },
+  "3.2.6": {
+    "en": "Reduce default poll interval to prevent missing order trigger"
   }
 }

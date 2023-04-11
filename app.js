@@ -9,7 +9,7 @@ var http = require("https");
 var md5 = require("md5");
 const schedule = require('node-schedule');
 
-var DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 12 // 12 hours
+var DEFAULT_POLL_INTERVAL = 1000 * 60 * 60 * 6 // 6 hours
 var ORDERED_POLL_INTERVAL = 1000 * 60 * 60 * 1 // 1 hour
 var DELIVERY_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 
