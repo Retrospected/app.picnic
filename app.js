@@ -52,13 +52,6 @@ class Picnic extends Homey.App {
 		//this.homey.settings.unset("password")
 		//this.homey.settings.set("order_status", "delivery_announced")
 
-		// retrieve initial order info
-		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
-		{
-			this.debug("Auth found, retrieving order")
-			this.pollOrder();
-		}
-
 		// conversion order_status code for all versions before 3.2.1
 		// this prevents unnecessary triggers being fired when <3.2.1 is upgraded to 3.2.2 and above
 		if (this.homey.settings.get("order_status") == "order_announced") {
@@ -69,9 +62,16 @@ class Picnic extends Homey.App {
 			this.homey.settings.set("order_status", "groceries_ordered");
 		}
 
-		this._initAppTokens();
 		this._initFlowTriggers();
+		this._initAppTokens();
 		this._initTimers();
+
+		// retrieve initial order info
+		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
+		{
+			this.debug("Auth found, retrieving order")
+			this.pollOrder();
+		}
 	}
 
 	async _initAppTokens() {
@@ -142,6 +142,8 @@ class Picnic extends Homey.App {
 	}
 
 	async _initFlowTriggers() {
+		this.homey.app.debug("INIT Triggers")
+
 		this._groceriesOrderedTrigger = this.homey.flow
 		.getTriggerCard('groceries_ordered')
 		.registerRunListener();

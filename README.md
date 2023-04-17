@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.2.7
+
+- Bugfix triggers being reran on restart of the app
+
 ### 3.2.6
 
 - Reduce default poll interval to prevent missing order trigger

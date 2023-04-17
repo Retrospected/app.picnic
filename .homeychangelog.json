@@ -79,5 +79,8 @@
   },
   "3.2.6": {
     "en": "Reduce default poll interval to prevent missing order trigger"
+  },
+  "3.2.7": {
+    "en": "Bugfix triggers being reran on restart of the app"
   }
 }
