@@ -27,6 +27,13 @@
               <input id="password" type="password" value="" />
             </div>
             <div class="form-group">
+              <label>Country</label>
+              <select id="country">
+                <option>NL</option>
+                <option>DE</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label for="authenticated" data-i18n="settings.authenticated"></label>
               <div><var id="status">loading...</var></div>
             </div>
@@ -35,8 +42,8 @@
               <div><var id="order-status">loading...</var></div>
             </div>
           </form>
-          <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"/></button>
-          <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"/></button>
+          <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"></button>
+          <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"></button>
         </div>
       </div>
     </div>
@@ -151,6 +158,7 @@
 
           var usernameElement = document.getElementById('username');
           var passwordElement = document.getElementById('password');
+          var countryElement = document.getElementById('country');
           var saveElement = document.getElementById('save');
           var statusElement = document.getElementById('status');
           var orderStatusElement = document.getElementById('order-status');
@@ -177,6 +185,11 @@
             usernameElement.value = username;
           });
 
+          Homey.get('country', function( err, country ) {
+            if( err ) return Homey.alert( err );
+            countryElement.value = country.toUpperCase();
+          });
+
           resetOrderStatusElement.addEventListener('click', function(e) {
 
             Homey.api('GET', '/resetorderstatus', function( err, result ) {
@@ -186,8 +199,7 @@
           });
 
           saveElement.addEventListener('click', function(e) {
-
-            Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value }, function( err, result ) {
+              Homey.api('POST', '/login', { 'username': usernameElement.value, 'password': passwordElement.value, 'country': countryElement.value }, function( err, result ) {
               if( err ) return Homey.alert(err);
 
               Homey.set('username', usernameElement.value)

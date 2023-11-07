@@ -67,6 +67,22 @@ class Picnic extends Homey.App {
 		this._initTimers();
 
 		// retrieve initial order info
+
+		if (this.homey.settings.getKeys().indexOf("country") == -1)
+		{
+			this.debug("No country set, setting default to NL.")
+			this.homey.settings.set("country", "nl")
+		}
+
+		switch(this.homey.settings.get("country")) {
+			case "nl":
+				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
+			case "de":
+				this.homey.settings.set("url", "storefront-prod.de.picnicinternational.com")
+			default:
+				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
+		}
+
 		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
 		{
 			this.debug("Auth found, retrieving order")
@@ -344,6 +360,11 @@ class Picnic extends Homey.App {
 		});
 	}
 
+	async setCountry(country) {
+		this.debug("Setting country to: "+country);
+		this.homey.settings.set("country", country.toLowerCase());
+	}
+
 	async login(username, password) {
 		var post_data = {
 			key: username,
@@ -370,9 +391,10 @@ class Picnic extends Homey.App {
 		return new Promise((resolve) => {
 			const req = http.request(options, (res) => {
 				if (res.statusCode == 200) {
-				this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
-				this.homey.settings.set("username", username)
-				this.homey.settings.set("password", password)
+					this.debug("Authentication succeeded.")
+					this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
+					this.homey.settings.set("username", username)
+					this.homey.settings.set("password", password)
 					this.pollOrder();
 					resolve("success");
 				}
@@ -403,7 +425,7 @@ class Picnic extends Homey.App {
 
 	async getStatus () {
 		var options = {
-			hostname: 'storefront-prod.nl.picnicinternational.com',
+			hostname: this.homey.settings.get("url"),
 			port: 443,
 			path: '/api/14/cart',
 			method: 'GET',
@@ -468,6 +490,10 @@ class Picnic extends Homey.App {
 				}
 			}
 			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.get("order_status") != undefined){
+				this.debug("No order found, considering this as delivered. Old order status was: "+this.homey.settings.get("order_status"))
+				return resolve({ "event": "groceries_delivered"})
+			}
+			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.getKeys().indexOf("order_status") == -1){
 				this.debug("No order found, considering this as delivered. Old order status was: "+this.homey.settings.get("order_status"))
 				return resolve({ "event": "groceries_delivered"})
 			}
