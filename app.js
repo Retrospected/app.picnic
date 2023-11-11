@@ -375,9 +375,9 @@ class Picnic extends Homey.App {
 		var json_data = JSON.stringify(post_data)
 
 		var options = {
-			hostname: 'gateway-prod.global.picnicinternational.com',
+			hostname: this.homey.settings.get("url"),
 			port: 443,
-			path: '/api/14/user/login',
+			path: '/api/17/user/login',
 			method: 'POST',
 			timeout: 1000,
 			headers: {
