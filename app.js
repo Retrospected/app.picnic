@@ -369,6 +369,10 @@ class Picnic extends Homey.App {
 				this.log("Using the DE endpoint")
 				this.homey.settings.set("url", "storefront-prod.de.picnicinternational.com")
 				break;
+			case "fr":
+				this.log("Using the FR endpoint")
+				this.homey.settings.set("url", "storefront-prod.fr.picnicinternational.com")
+				break;
 		}
 	}
 
