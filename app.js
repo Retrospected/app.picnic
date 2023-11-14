@@ -74,14 +74,7 @@ class Picnic extends Homey.App {
 			this.homey.settings.set("country", "nl")
 		}
 
-		switch(this.homey.settings.get("country")) {
-			case "nl":
-				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
-			case "de":
-				this.homey.settings.set("url", "storefront-prod.de.picnicinternational.com")
-			default:
-				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
-		}
+		this.setUrl()
 
 		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
 		{
@@ -362,7 +355,21 @@ class Picnic extends Homey.App {
 
 	async setCountry(country) {
 		this.debug("Setting country to: "+country);
-		this.homey.settings.set("country", country.toLowerCase());
+		await this.homey.settings.set("country", country.toLowerCase());
+		this.setUrl()
+	}
+
+	async setUrl() {
+		switch(this.homey.settings.get("country")) {
+			case "nl":
+				this.log("Using the NL endpoint")
+				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
+				break;
+			case "de":
+				this.log("Using the DE endpoint")
+				this.homey.settings.set("url", "storefront-prod.de.picnicinternational.com")
+				break;
+		}
 	}
 
 	async login(username, password) {
@@ -372,6 +379,8 @@ class Picnic extends Homey.App {
 			client_id: 1
 		};
 
+		this.debug("Logging in with: "+username+" in: "+this.homey.settings.get("country"))
+		this.debug("To URL: "+this.homey.settings.get("url"))
 		var json_data = JSON.stringify(post_data)
 
 		var options = {
@@ -392,6 +401,7 @@ class Picnic extends Homey.App {
 			const req = http.request(options, (res) => {
 				if (res.statusCode == 200) {
 					this.debug("Authentication succeeded.")
+					this.debug("JWT:"+res.headers['x-picnic-auth'])
 					this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
 					this.homey.settings.set("username", username)
 					this.homey.settings.set("password", password)

@@ -40,7 +40,7 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
-### 3.3.1
+### 3.3.2
 
 - Adding support for German customers of Picnic
 
