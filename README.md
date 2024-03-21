@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.3.2
+
+- Adding support for German customers of Picnic
+
 ### 3.2.7
 
 - Bugfix triggers being reran on restart of the app

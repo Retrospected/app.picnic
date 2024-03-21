@@ -2,6 +2,7 @@
 
 module.exports = {
   async login({ homey, body }) {
+    await homey.app.setCountry(body.country);
     return await homey.app.login(body.username, body.password);
   },
 

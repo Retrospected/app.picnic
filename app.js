@@ -67,6 +67,15 @@ class Picnic extends Homey.App {
 		this._initTimers();
 
 		// retrieve initial order info
+
+		if (this.homey.settings.getKeys().indexOf("country") == -1)
+		{
+			this.debug("No country set, setting default to NL.")
+			this.homey.settings.set("country", "nl")
+		}
+
+		this.setUrl()
+
 		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
 		{
 			this.debug("Auth found, retrieving order")
@@ -344,6 +353,25 @@ class Picnic extends Homey.App {
 		});
 	}
 
+	async setCountry(country) {
+		this.debug("Setting country to: "+country);
+		await this.homey.settings.set("country", country.toLowerCase());
+		this.setUrl()
+	}
+
+	async setUrl() {
+		switch(this.homey.settings.get("country")) {
+			case "nl":
+				this.log("Using the NL endpoint")
+				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
+				break;
+			case "de":
+				this.log("Using the DE endpoint")
+				this.homey.settings.set("url", "storefront-prod.de.picnicinternational.com")
+				break;
+		}
+	}
+
 	async login(username, password) {
 		var post_data = {
 			key: username,
@@ -351,12 +379,14 @@ class Picnic extends Homey.App {
 			client_id: 1
 		};
 
+		this.debug("Logging in with: "+username+" in: "+this.homey.settings.get("country"))
+		this.debug("To URL: "+this.homey.settings.get("url"))
 		var json_data = JSON.stringify(post_data)
 
 		var options = {
-			hostname: 'gateway-prod.global.picnicinternational.com',
+			hostname: this.homey.settings.get("url"),
 			port: 443,
-			path: '/api/14/user/login',
+			path: '/api/17/user/login',
 			method: 'POST',
 			timeout: 1000,
 			headers: {
@@ -370,9 +400,11 @@ class Picnic extends Homey.App {
 		return new Promise((resolve) => {
 			const req = http.request(options, (res) => {
 				if (res.statusCode == 200) {
-				this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
-				this.homey.settings.set("username", username)
-				this.homey.settings.set("password", password)
+					this.debug("Authentication succeeded.")
+					this.debug("JWT:"+res.headers['x-picnic-auth'])
+					this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
+					this.homey.settings.set("username", username)
+					this.homey.settings.set("password", password)
 					this.pollOrder();
 					resolve("success");
 				}
@@ -403,7 +435,7 @@ class Picnic extends Homey.App {
 
 	async getStatus () {
 		var options = {
-			hostname: 'storefront-prod.nl.picnicinternational.com',
+			hostname: this.homey.settings.get("url"),
 			port: 443,
 			path: '/api/14/cart',
 			method: 'GET',
@@ -468,6 +500,10 @@ class Picnic extends Homey.App {
 				}
 			}
 			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.get("order_status") != undefined){
+				this.debug("No order found, considering this as delivered. Old order status was: "+this.homey.settings.get("order_status"))
+				return resolve({ "event": "groceries_delivered"})
+			}
+			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.getKeys().indexOf("order_status") == -1){
 				this.debug("No order found, considering this as delivered. Old order status was: "+this.homey.settings.get("order_status"))
 				return resolve({ "event": "groceries_delivered"})
 			}
