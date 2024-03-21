@@ -1,0 +1,11 @@
+{
+    "id": "groceries_ordered",
+    "title": {
+      "en": "Groceries !{{have been|have not been}} ordered",
+      "nl": "Boodschappen !{{zijn besteld|zijn niet besteld}}"
+    },
+    "hint": {
+      "en": "Check if there is an active order.",
+      "nl": "Kijk of er een actieve bestelling is."
+    }
+}
