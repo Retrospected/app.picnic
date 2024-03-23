@@ -87,6 +87,6 @@
     "en": "Adding support for German customers of Picnic"
   },
   "3.4.0": {
-    "en": "Bugfix adding products via action card and add 2FA support"
+    "en": "Bugfix adding products via action card"
   }
 }

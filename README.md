@@ -42,7 +42,7 @@ The following order specific global tokens are available:
 
 ### 3.4.0
 
-- Bugfix adding products via action card and add 2FA support
+- Bugfix adding products via action card
 
 ### 3.3.2
 
