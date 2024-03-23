@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "3.3.2",
+  "version": "3.4.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "name": {
@@ -59,7 +59,7 @@
       "method": "POST",
       "path": "/login"
     },
-    "status": { 
+    "status": {
       "method": "GET",
       "path": "/status"
     },

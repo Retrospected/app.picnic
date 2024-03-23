@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.4.0
+
+- Bugfix adding products via action card and add 2FA support
+
 ### 3.3.2
 
 - Adding support for German customers of Picnic
