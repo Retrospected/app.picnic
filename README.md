@@ -40,7 +40,7 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
-### 3.4.0
+### 3.4.1
 
 - Bugfix adding products via action card
 
