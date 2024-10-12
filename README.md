@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.4.3
+
+- Another bugfix adding products via action card due to changed JSON structure
+
 ### 3.4.2
 
 - Bugfix adding products via action card

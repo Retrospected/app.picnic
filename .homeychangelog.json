@@ -88,5 +88,8 @@
   },
   "3.4.2": {
     "en": "Bugfix adding products via action card"
+  },
+  "3.4.3": {
+    "en": "Another bugfix adding products via action card due to changed JSON structure"
   }
 }
