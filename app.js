@@ -28,22 +28,22 @@ class Picnic extends Homey.App {
 			ORDERED_POLL_INTERVAL = 1000 * 30 * 1 // 30 seconds
 			DELIVERY_POLL_INTERVAL = 1000 * 10 * 1 // 10 seconds
 
-			this.debug("ORDER STATUS: "+this.homey.settings.get("order_status"))
-			this.debug("PICNIC USER: "+this.homey.settings.get("username"))
+			this.debug("ORDER STATUS: " + this.homey.settings.get("order_status"))
+			this.debug("PICNIC USER: " + this.homey.settings.get("username"))
 			//this.debug("PICNIC PASS: "+this.homey.settings.get("password"))
 			//this.debug("PICNIC JWT: "+this.homey.settings.get("x-picnic-auth"))
 		}
 
-		this.actions = new actions({homey: this.homey});
+		this.actions = new actions({ homey: this.homey });
 		this.actions.onInit();
 
-		this.conditions = new conditions({homey: this.homey});
+		this.conditions = new conditions({ homey: this.homey });
 		this.conditions.onInit();
 
-		this.utils = new utils({homey: this.homey});
+		this.utils = new utils({ homey: this.homey });
 
 		this.homey.settings.set("additemLock", false)
-		
+
 		// simulate fresh install
 		//this.homey.settings.unset("order_status")
 		//this.homey.settings.unset("delivery_eta_start")
@@ -68,45 +68,43 @@ class Picnic extends Homey.App {
 
 		// retrieve initial order info
 
-		if (this.homey.settings.getKeys().indexOf("country") == -1)
-		{
+		if (this.homey.settings.getKeys().indexOf("country") == -1) {
 			this.debug("No country set, setting default to NL.")
 			this.homey.settings.set("country", "nl")
 		}
 
 		this.setUrl()
 
-		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1)
-		{
+		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1) {
 			this.debug("Auth found, retrieving order")
 			this.pollOrder();
 		}
 	}
 
 	async _initAppTokens() {
-		
+
 		// Create app tokens (labels)
-		let orderStatus = await this.homey.flow.createToken( 'order_status', {
+		let orderStatus = await this.homey.flow.createToken('order_status', {
 			type: 'string',
 			title: this.homey.__('tokens.order.status')
 		});
 
-		let orderPrice = await this.homey.flow.createToken( 'order_price', {
+		let orderPrice = await this.homey.flow.createToken('order_price', {
 			type: 'number',
 			title: this.homey.__('tokens.order.price')
 		});
 
-		let orderDeliveryDate = await this.homey.flow.createToken( 'order_deliverydate', {
+		let orderDeliveryDate = await this.homey.flow.createToken('order_deliverydate', {
 			type: 'string',
 			title: this.homey.__('tokens.delivery.date')
 		});
 
-		let orderDeliveryStartWindow = await this.homey.flow.createToken( 'order_deliverystartwindow', {
+		let orderDeliveryStartWindow = await this.homey.flow.createToken('order_deliverystartwindow', {
 			type: 'string',
 			title: this.homey.__('tokens.delivery.startwindow')
 		});
 
-		let orderDeliveryEndWindow = await this.homey.flow.createToken( 'order_deliveryendwindow', {
+		let orderDeliveryEndWindow = await this.homey.flow.createToken('order_deliveryendwindow', {
 			type: 'string',
 			title: this.homey.__('tokens.delivery.endwindow')
 		});
@@ -123,7 +121,7 @@ class Picnic extends Homey.App {
 			await this.orderStatus.setValue("")
 		}
 
-		if (this.homey.settings.get("order_price") !== null) { 
+		if (this.homey.settings.get("order_price") !== null) {
 			await this.orderPrice.setValue(this.homey.settings.get("order_price"));
 		} else {
 			await this.orderPrice.setValue(0)
@@ -154,23 +152,23 @@ class Picnic extends Homey.App {
 		this.homey.app.debug("INIT Triggers")
 
 		this._groceriesOrderedTrigger = this.homey.flow
-		.getTriggerCard('groceries_ordered')
-		.registerRunListener();
+			.getTriggerCard('groceries_ordered')
+			.registerRunListener();
 		this._deliveryAnnouncedTrigger = this.homey.flow
-		.getTriggerCard('delivery_announced')
-		.registerRunListener();
+			.getTriggerCard('delivery_announced')
+			.registerRunListener();
 
 		this._groceriesDelivered = this.homey.flow
-		.getTriggerCard('groceries_delivered')
-		.registerRunListener();
+			.getTriggerCard('groceries_delivered')
+			.registerRunListener();
 
 		this._deliveryAnnouncedTriggerBeginTime = this.homey.flow
-		.getTriggerCard('delivery_announced_begin_time')
-		.registerRunListener();
+			.getTriggerCard('delivery_announced_begin_time')
+			.registerRunListener();
 
 		this._deliveryAnnouncedTriggerEndTime = this.homey.flow
-		.getTriggerCard('delivery_announced_end_time')
-		.registerRunListener();
+			.getTriggerCard('delivery_announced_end_time')
+			.registerRunListener();
 	}
 
 	async _initTimers() {
@@ -198,13 +196,13 @@ class Picnic extends Homey.App {
 
 	debug(message) {
 		try {
-            if (DEBUG) {
-                const debugMessage = `[debug] ${message}`;
-                this.homey.log(debugMessage);
-            }
-        } catch (exception) {
-            this.homey.error(exception);
-        }
+			if (DEBUG) {
+				const debugMessage = `[debug] ${message}`;
+				this.homey.log(debugMessage);
+			}
+		} catch (exception) {
+			this.homey.error(exception);
+		}
 
 	}
 
@@ -214,13 +212,13 @@ class Picnic extends Homey.App {
 				this.debug("Polling for new order info")
 				this.getOrderStatus().then(orderEvent => {
 					this.debug("Processing order info")
-					if ( orderEvent.toString() == "Error: unauthorized" ) {
+					if (orderEvent.toString() == "Error: unauthorized") {
 						this.debug("Error: unauthorized, please check your credentials")
-						this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function(callBack) {
+						this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function (callBack) {
 							return Promise.reject(new Error('Re-authentication failed.'));
 						});
 					}
-					else if ( orderEvent instanceof Error ) {
+					else if (orderEvent instanceof Error) {
 						this.debug("Order retrieving failed, connectivity issues?")
 						return Promise.reject(new Error('Status could not be retrieved.'));
 					}
@@ -233,8 +231,8 @@ class Picnic extends Homey.App {
 							const eta_date = orderEvent["eta1_start"].replace(/T/, ' ').replace(/\..+/, '').split(' ')[0]
 							const price = orderEvent["price"]
 
-							const data = { 'price': price,  'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date}
-							
+							const data = { 'price': price, 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
+
 							this._groceriesOrderedTrigger.trigger(data)
 
 							this.orderPrice.setValue(price)
@@ -248,8 +246,8 @@ class Picnic extends Homey.App {
 							this.homey.settings.set("delivery_eta_start", orderEvent["eta1_start"])
 							this.homey.settings.set("delivery_eta_end", orderEvent["eta1_end"])
 							this.homey.settings.set("delivery_date", eta_date)
-							
-							this.debug("Updating poll interval to "+ORDERED_POLL_INTERVAL/1000/60+" minutes");
+
+							this.debug("Updating poll interval to " + ORDERED_POLL_INTERVAL / 1000 / 60 + " minutes");
 							this.homey.app.changeInterval(ORDERED_POLL_INTERVAL);
 						}
 						else if (orderEvent["event"] == 'delivery_announced') {
@@ -266,7 +264,7 @@ class Picnic extends Homey.App {
 							this.orderDeliveryDate.setValue(eta_date)
 							this.orderDeliveryStartWindow.setValue(eta2_start)
 							this.orderDeliveryEndWindow.setValue(eta2_end)
-						
+
 							this.homey.settings.set("order_status", "delivery_announced")
 							this.homey.settings.set("delivery_eta_start", orderEvent["eta2_start"])
 							this.homey.settings.set("delivery_eta_end", orderEvent["eta2_end"])
@@ -291,7 +289,7 @@ class Picnic extends Homey.App {
 							this.orderDeliveryEndWindow.setValue("")
 
 							this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
-							
+
 							this.homey.settings.set("order_status", "groceries_delivered")
 							this.homey.settings.unset("delivery_date")
 							this.homey.settings.unset("delivery_eta_start")
@@ -299,25 +297,25 @@ class Picnic extends Homey.App {
 						}
 					}
 				})
-				.catch (error => {
-					if ( error == "Error: unauthorized" ) {
-						this.debug("ERROR: unauthorized, trying to retrieve new auth token.")
-						this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function(callback) {
-							this.debug(callback)
-							if (callback == "success") {
-								this.debug("Auth token succesfully renewed.")
-								return Promise.resolve('Success');
-							} else {
-								this.debug("ERROR: Re-authentication failed. Please check your credentials.")
-								return Promise.reject('ERROR: Re-authentication failed. Please check your credentials.');
-							}
-						});
-					}
-					else {
-						this.debug("ERROR: "+error)
-						return Promise.reject('Error: an unexpected error occured.')
-					}
-				});
+					.catch(error => {
+						if (error == "Error: unauthorized") {
+							this.debug("ERROR: unauthorized, trying to retrieve new auth token.")
+							this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function (callback) {
+								this.debug(callback)
+								if (callback == "success") {
+									this.debug("Auth token succesfully renewed.")
+									return Promise.resolve('Success');
+								} else {
+									this.debug("ERROR: Re-authentication failed. Please check your credentials.")
+									return Promise.reject('ERROR: Re-authentication failed. Please check your credentials.');
+								}
+							});
+						}
+						else {
+							this.debug("ERROR: " + error)
+							return Promise.reject('Error: an unexpected error occured.')
+						}
+					});
 			} else if (this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password")) {
 				this.debug("No JWT token found, so trying to retrieve one by authenticating")
 				this.login(this.homey.settings.getKeys().indexOf("username"), this.homey.settings.getKeys().indexOf("password"))
@@ -328,25 +326,25 @@ class Picnic extends Homey.App {
 	}
 
 	changeInterval(interval) {
-		this.debug("Changing polling interval to: "+interval/1000/60+" minutes");
+		this.debug("Changing polling interval to: " + interval / 1000 / 60 + " minutes");
 		clearInterval(runningInterval);
 		runningInterval = setInterval(this.pollOrder.bind(this), interval);
 	}
 
 	createDeliverySchedule(eta_start, eta_end) {
-		const deliveryStartMin30 = new Date(new Date(eta_start) - 1000*60*30);
+		const deliveryStartMin30 = new Date(new Date(eta_start) - 1000 * 60 * 30);
 		this.debug("Increasing poll rate at " + deliveryStartMin30.toString())
-		
+
 		// scheduling increase of the polling rate 30min before the delivery time 
 		schedule.scheduleJob(deliveryStartMin30, () => {
 			this.homey.app.changeInterval(DELIVERY_POLL_INTERVAL);
 		});
-		
+
 		// schedule beginning of delivery window trigger
 		schedule.scheduleJob(new Date(eta_start), () => {
 			this.homey.app._deliveryAnnouncedTriggerBeginTime.trigger()
 		});
-		
+
 		// schedule ending of delivery window trigger
 		schedule.scheduleJob(new Date(eta_end), () => {
 			this.homey.app._deliveryAnnouncedTriggerEndTime.trigger()
@@ -354,13 +352,13 @@ class Picnic extends Homey.App {
 	}
 
 	async setCountry(country) {
-		this.debug("Setting country to: "+country);
+		this.debug("Setting country to: " + country);
 		await this.homey.settings.set("country", country.toLowerCase());
 		this.setUrl()
 	}
 
 	async setUrl() {
-		switch(this.homey.settings.get("country")) {
+		switch (this.homey.settings.get("country")) {
 			case "nl":
 				this.log("Using the NL endpoint")
 				this.homey.settings.set("url", "storefront-prod.nl.picnicinternational.com")
@@ -376,32 +374,32 @@ class Picnic extends Homey.App {
 		var post_data = {
 			key: username,
 			secret: md5(password),
-			client_id: 1
+			client_id: 30100
 		};
 
-		this.debug("Logging in with: "+username+" in: "+this.homey.settings.get("country"))
-		this.debug("To URL: "+this.homey.settings.get("url"))
+		this.debug("Logging in with: " + username + " in: " + this.homey.settings.get("country"))
+		this.debug("To URL: " + this.homey.settings.get("url"))
 		var json_data = JSON.stringify(post_data)
 
 		var options = {
 			hostname: this.homey.settings.get("url"),
 			port: 443,
-			path: '/api/17/user/login',
+			path: '/api/15/user/login',
 			method: 'POST',
 			timeout: 1000,
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"client_id": "10100",
+				"client_id": "30100",
 				"device_id": "open.app.picnic.homey"
 			}
 		}
-		
+
 		return new Promise((resolve) => {
 			const req = http.request(options, (res) => {
 				if (res.statusCode == 200) {
 					this.debug("Authentication succeeded.")
-					this.debug("JWT:"+res.headers['x-picnic-auth'])
+					this.debug("JWT:" + res.headers['x-picnic-auth'])
 					this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
 					this.homey.settings.set("username", username)
 					this.homey.settings.set("password", password)
@@ -428,12 +426,12 @@ class Picnic extends Homey.App {
 	async getOrderStatusFromSettings() {
 		return this.homey.settings.get("order_status");
 	}
-	
+
 	async resetOrderStatus() {
 		this.homey.settings.set("order_status", "");
 	}
 
-	async getStatus () {
+	async getStatus() {
 		var options = {
 			hostname: this.homey.settings.get("url"),
 			port: 443,
@@ -456,7 +454,7 @@ class Picnic extends Homey.App {
 					resolve("NOT OK");
 				}
 			});
-	
+
 			req.on('error', () => {
 				resolve("NOT OK");
 			});
@@ -464,55 +462,50 @@ class Picnic extends Homey.App {
 			req.end();
 		});
 	}
-	async getOrderStatus () {
+	async getOrderStatus() {
 		return new Promise((resolve, reject) => {
-		   this.utils.getOrderStatus().then(content => {
-			if (DEBUG) {
-				this.debug("Order info received, raw json:")
-				//this.debug(this.homey.settings.get("x-picnic-auth"))
-				this.debug(content)
-			}
-			if (typeof content == 'undefined') return reject("No content received");
-	
-			if (JSON.parse(content)[0] != undefined)
-			{
-				if (JSON.parse(content)[0]["delivery_time"] != undefined && this.homey.settings.get("order_status") != "groceries_delivered")
-				{
-					this.debug("Retrieved new order status from Picnic: groceries_delivered, old order status was: "+this.homey.settings.get("order_status"))
+			this.utils.getOrderStatus().then(content => {
+				if (DEBUG) {
+					this.debug("Order info received, raw json:")
+					//this.debug(this.homey.settings.get("x-picnic-auth"))
+					this.debug(content)
+				}
+				if (typeof content == 'undefined') return reject("No content received");
+
+				if (JSON.parse(content)[0] != undefined) {
+					if (JSON.parse(content)[0]["delivery_time"] != undefined && this.homey.settings.get("order_status") != "groceries_delivered") {
+						this.debug("Retrieved new order status from Picnic: groceries_delivered, old order status was: " + this.homey.settings.get("order_status"))
+						return resolve({ "event": "groceries_delivered" })
+					}
+					else if (JSON.parse(content)[0]["delivery_time"] == undefined && JSON.parse(content)[0]["eta2"] != undefined && this.homey.settings.get("order_status") != "delivery_announced") {
+						this.debug("Retrieved new order status from Picnic: delivery_announced, old order status was: " + this.homey.settings.get("order_status"))
+						return resolve({ "event": "delivery_announced", "eta2_start": JSON.parse(content)[0]["eta2"]["start"], "eta2_end": JSON.parse(content)[0]["eta2"]["end"] })
+
+					}
+					else if (JSON.parse(content)[0]["delivery_time"] == undefined && JSON.parse(content)[0]["eta2"] == undefined && this.homey.settings.get("order_status") != "groceries_ordered") {
+						this.debug("Retrieved new order status from Picnic: groceries_ordered, old order status was: " + this.homey.settings.get("order_status"))
+						var total_amount = 0;
+						JSON.parse(content)[0]["orders"].forEach(function (order) { total_amount = total_amount + order["total_price"] });
+						return resolve({ "event": "groceries_ordered", "price": total_amount / 100, "eta1_start": JSON.parse(content)[0]["slot"]["window_start"], "eta1_end": JSON.parse(content)[0]["slot"]["window_end"] })
+					}
+					else {
+						this.debug("Order status did not change, current order status: " + this.homey.settings.get("order_status"))
+					}
+				}
+				else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.get("order_status") != undefined) {
+					this.debug("No order found, considering this as delivered. Old order status was: " + this.homey.settings.get("order_status"))
 					return resolve({ "event": "groceries_delivered" })
 				}
-				else if (JSON.parse(content)[0]["delivery_time"] == undefined && JSON.parse(content)[0]["eta2"] != undefined && this.homey.settings.get("order_status") != "delivery_announced")
-				{
-				  	this.debug("Retrieved new order status from Picnic: delivery_announced, old order status was: "+this.homey.settings.get("order_status"))
-					return resolve({ "event": "delivery_announced", "eta2_start": JSON.parse(content)[0]["eta2"]["start"], "eta2_end": JSON.parse(content)[0]["eta2"]["end"] })
-	
+				else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.getKeys().indexOf("order_status") == -1) {
+					this.debug("No order found, considering this as delivered. Old order status was: " + this.homey.settings.get("order_status"))
+					return resolve({ "event": "groceries_delivered" })
 				}
-				else if (JSON.parse(content)[0]["delivery_time"] == undefined && JSON.parse(content)[0]["eta2"] == undefined && this.homey.settings.get("order_status") != "groceries_ordered")
-				{
-					this.debug("Retrieved new order status from Picnic: groceries_ordered, old order status was: "+this.homey.settings.get("order_status"))
-					var total_amount = 0;
-					JSON.parse(content)[0]["orders"].forEach(function(order){ total_amount=total_amount+order["total_price"] });
-					return resolve({ "event": "groceries_ordered", "price": total_amount/100, "eta1_start": JSON.parse(content)[0]["slot"]["window_start"], "eta1_end": JSON.parse(content)[0]["slot"]["window_end"] })
-				}
-				else
-				{
-				  this.debug("Order status did not change, current order status: "+this.homey.settings.get("order_status"))
-				}
-			}
-			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.get("order_status") != undefined){
-				this.debug("No order found, considering this as delivered. Old order status was: "+this.homey.settings.get("order_status"))
-				return resolve({ "event": "groceries_delivered"})
-			}
-			else if (JSON.parse(content).length == 0 && this.homey.settings.get("order_status") != "groceries_delivered" && this.homey.settings.getKeys().indexOf("order_status") == -1){
-				this.debug("No order found, considering this as delivered. Old order status was: "+this.homey.settings.get("order_status"))
-				return resolve({ "event": "groceries_delivered"})
-			}
+			})
+				.catch(error => {
+					this.debug("ERROR: Order retrieval failed")
+					reject(error)
+				})
 		})
-		.catch(error => {
-			this.debug("ERROR: Order retrieval failed")
-		  	reject(error)
-		})
-	  })
 	};
 }
 

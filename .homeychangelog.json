@@ -85,5 +85,8 @@
   },
   "3.3.2": {
     "en": "Adding support for German customers of Picnic"
+  },
+  "3.4.2": {
+    "en": "Bugfix adding products via action card"
   }
 }
