@@ -8,7 +8,15 @@
         "authenticated": "Authenticatie status",
         "order-status": "Bestelling status",
         "order-status-button": "bestelling status",
-        "save-button": "Wijzigingen opslaan"
+        "save-button": "Wijzigingen opslaan",
+        "2fa": {
+            "info": "Tweestapsverificatie is vereist. Er is een SMS-code verzonden naar het telefoonnummer van je Picnic-account.",
+            "code-label": "SMS-code",
+            "verify-button": "Verifieer",
+            "resend-button": "Code opnieuw sturen",
+            "code-sent": "Er is een nieuwe SMS-code verzonden.",
+            "verify-failed": "Verificatie mislukt. Probeer het opnieuw."
+        }
     },
     "tokens": {
         "order": {

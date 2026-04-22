@@ -59,6 +59,14 @@
       "method": "POST",
       "path": "/login"
     },
+    "generate2FA": {
+      "method": "POST",
+      "path": "/generate2fa"
+    },
+    "verify2FA": {
+      "method": "POST",
+      "path": "/verify2fa"
+    },
     "status": {
       "method": "GET",
       "path": "/status"

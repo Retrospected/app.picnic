@@ -8,7 +8,15 @@
         "authenticated": "Authentication status",
         "order-status": "Order status",
         "order-status-button": "order status",
-        "save-button": "Save changes"
+        "save-button": "Save changes",
+        "2fa": {
+            "info": "Two-factor authentication is required. An SMS code has been sent to the phone number registered with your Picnic account.",
+            "code-label": "SMS code",
+            "verify-button": "Verify",
+            "resend-button": "Resend code",
+            "code-sent": "A new SMS code has been sent.",
+            "verify-failed": "Verification failed. Please try again."
+        }
     },
     "tokens": {
         "order": {
