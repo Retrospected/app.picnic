@@ -40,6 +40,10 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.5.0
+
+- Adding support for the 2FA authentication flow and fixing adding products
+
 ### 3.4.3
 
 - Another bugfix adding products via action card due to changed JSON structure
