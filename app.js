@@ -404,19 +404,25 @@ class Picnic extends Homey.App {
 					if (res.statusCode == 200) {
 						this.debug("Authentication succeeded.")
 						this.debug("JWT:" + res.headers['x-picnic-auth'])
-						this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
-						this.homey.settings.set("username", username)
-						this.homey.settings.set("password", password)
 
 						let responseData = {};
 						try { responseData = JSON.parse(body); } catch (e) { /* empty or non-json body is fine */ }
 
+						this.homey.settings.set("username", username)
+						this.homey.settings.set("password", password)
+
 						if (responseData.second_factor_authentication_required === true) {
 							this.debug("2FA required, requesting SMS code.")
+							this.homey.settings.set("x-picnic-auth-pending", res.headers['x-picnic-auth'])
+							this.homey.settings.set("2fa_pending", true)
+							this.homey.settings.unset("x-picnic-auth")
 							this.generate2FACode("SMS")
 								.then(() => resolve("2fa_required"))
 								.catch(() => resolve("2fa_required"));
 						} else {
+							this.homey.settings.unset("x-picnic-auth-pending")
+							this.homey.settings.set("2fa_pending", false)
+							this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
 							this.pollOrder();
 							resolve("success");
 						}
