@@ -42,6 +42,15 @@
               <div><var id="order-status">loading...</var></div>
             </div>
           </form>
+          <div id="twofa-section" style="display:none; margin-top:15px; padding:10px; border:1px solid #ccc; border-radius:4px;">
+            <p data-i18n="settings.2fa.info"></p>
+            <div class="form-group">
+              <label for="otp" data-i18n="settings.2fa.code-label"></label>
+              <input class="form-control" id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="" />
+            </div>
+            <button id="verify-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.verify-button"></var></button>
+            <button id="resend-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.resend-button"></var></button>
+          </div>
           <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"></button>
           <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"></button>
         </div>
@@ -163,6 +172,10 @@
           var statusElement = document.getElementById('status');
           var orderStatusElement = document.getElementById('order-status');
           var resetOrderStatusElement = document.getElementById('reset-order-status');
+          var twofaSection = document.getElementById('twofa-section');
+          var otpElement = document.getElementById('otp');
+          var verify2faElement = document.getElementById('verify-2fa');
+          var resend2faElement = document.getElementById('resend-2fa');
 
           Homey.api('GET', '/status', null, function ( err, result ) {
             if ( err ) return Homey.alert( err );
@@ -205,9 +218,44 @@
               Homey.set('username', usernameElement.value)
               Homey.set('password', passwordElement.value)
 
+              if (result === '2fa_required') {
+                twofaSection.style.display = 'block';
+                otpElement.value = '';
+                otpElement.focus();
+                return;
+              }
+
+              if (result !== 'success') {
+                return Homey.alert(result);
+              }
+
               window.location.reload();
             });
 
+          });
+
+          verify2faElement.addEventListener('click', function(e) {
+            var otp = (otpElement.value || '').trim();
+            if (!otp) {
+              return Homey.alert(Homey.__('settings.2fa.code-label'));
+            }
+            Homey.api('POST', '/verify2fa', { 'otp': otp }, function( err, result ) {
+              if( err ) return Homey.alert(err);
+              if (result !== 'success') {
+                return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
+              }
+              window.location.reload();
+            });
+          });
+
+          resend2faElement.addEventListener('click', function(e) {
+            Homey.api('POST', '/generate2fa', { 'channel': 'SMS' }, function( err, result ) {
+              if( err ) return Homey.alert(err);
+              if (result !== 'success') {
+                return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
+              }
+              Homey.alert(Homey.__('settings.2fa.code-sent'));
+            });
           });
         }
         </script>

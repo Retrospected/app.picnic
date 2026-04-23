@@ -45,12 +45,14 @@ class Picnic extends Homey.App {
 		this.homey.settings.set("additemLock", false)
 
 		// simulate fresh install
-		//this.homey.settings.unset("order_status")
-		//this.homey.settings.unset("delivery_eta_start")
-		//this.homey.settings.unset("x-picnic-auth")
-		//this.homey.settings.unset("username")
-		//this.homey.settings.unset("password")
-		//this.homey.settings.set("order_status", "delivery_announced")
+		// this.homey.settings.unset("order_status")
+		// this.homey.settings.unset("delivery_eta_start")
+		// this.homey.settings.unset("x-picnic-auth")
+		// this.homey.settings.unset("x-picnic-auth-pending")
+		// this.homey.settings.unset("2fa_pending")
+		// this.homey.settings.unset("username")
+		// this.homey.settings.unset("password")
+		// this.homey.settings.set("order_status", "delivery_announced")
 
 		// conversion order_status code for all versions before 3.2.1
 		// this prevents unnecessary triggers being fired when <3.2.1 is upgraded to 3.2.2 and above
@@ -386,7 +388,7 @@ class Picnic extends Homey.App {
 			port: 443,
 			path: '/api/15/user/login',
 			method: 'POST',
-			timeout: 1000,
+			timeout: 5000,
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
@@ -397,25 +399,146 @@ class Picnic extends Homey.App {
 
 		return new Promise((resolve) => {
 			const req = http.request(options, (res) => {
-				if (res.statusCode == 200) {
-					this.debug("Authentication succeeded.")
-					this.debug("JWT:" + res.headers['x-picnic-auth'])
-					this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
-					this.homey.settings.set("username", username)
-					this.homey.settings.set("password", password)
-					this.pollOrder();
-					resolve("success");
-				}
-				else {
-					this.debug("ERROR: Authentication failed.")
-					this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
-					resolve('Problem with request or authentication failed.');
-				}
+				let body = '';
+				res.setEncoding('utf8');
+				res.on('data', (chunk) => { body += chunk; });
+				res.on('end', () => {
+					if (res.statusCode == 200) {
+						this.debug("Authentication succeeded.")
+						this.debug("JWT:" + res.headers['x-picnic-auth'])
+
+						let responseData = {};
+						try { responseData = JSON.parse(body); } catch (e) { /* empty or non-json body is fine */ }
+
+						this.homey.settings.set("username", username)
+						this.homey.settings.set("password", password)
+
+						if (responseData.second_factor_authentication_required === true) {
+							this.debug("2FA required, requesting SMS code.")
+							this.homey.settings.set("x-picnic-auth-pending", res.headers['x-picnic-auth'])
+							this.homey.settings.set("2fa_pending", true)
+							this.homey.settings.unset("x-picnic-auth")
+							this.generate2FACode("SMS")
+								.then(() => resolve("2fa_required"))
+								.catch(() => resolve("2fa_required"));
+						} else {
+							this.homey.settings.unset("x-picnic-auth-pending")
+							this.homey.settings.set("2fa_pending", false)
+							this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
+							this.pollOrder();
+							resolve("success");
+						}
+					}
+					else {
+						this.debug("ERROR: Authentication failed. Status: " + res.statusCode)
+						this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
+						resolve('Problem with request or authentication failed.');
+					}
+				});
 			});
 
 			req.on('error', (e) => {
 				this.debug("ERROR: Problem with request or authentication failed.")
 				resolve('Problem with request or authentication failed.');
+			});
+
+			req.write(json_data);
+			req.end();
+		});
+	}
+
+	async generate2FACode(channel) {
+		var json_data = JSON.stringify({ channel: channel || "SMS" });
+		var options = {
+			hostname: this.homey.settings.get("url"),
+			port: 443,
+			path: '/api/15/user/2fa/generate',
+			method: 'POST',
+			timeout: 5000,
+			headers: {
+				"User-Agent": "okhttp/3.9.0",
+				"Content-Type": "application/json; charset=UTF-8",
+				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
+				"x-picnic-did": "open.app.picnic.homey",
+				"x-picnic-agent": "30100;1.15.233-#15158"
+			}
+		}
+
+		this.debug("Requesting 2FA code via " + (channel || "SMS"))
+
+		return new Promise((resolve, reject) => {
+			const req = http.request(options, (res) => {
+				let body = '';
+				res.setEncoding('utf8');
+				res.on('data', (chunk) => { body += chunk; });
+				res.on('end', () => {
+					if (res.statusCode >= 200 && res.statusCode < 300) {
+						this.debug("2FA code requested successfully.")
+						resolve("success");
+					} else {
+						this.debug("ERROR: 2FA code request failed. Status: " + res.statusCode + " body: " + body)
+						reject(new Error("2FA code request failed: " + res.statusCode));
+					}
+				});
+			});
+
+			req.on('error', (e) => {
+				this.debug("ERROR: Problem with 2FA generate request: " + e.message)
+				reject(e);
+			});
+
+			req.write(json_data);
+			req.end();
+		});
+	}
+
+	async verify2FACode(otp) {
+		var json_data = JSON.stringify({ otp: String(otp || "") });
+		var options = {
+			hostname: this.homey.settings.get("url"),
+			port: 443,
+			path: '/api/15/user/2fa/verify',
+			method: 'POST',
+			timeout: 5000,
+			headers: {
+				"User-Agent": "okhttp/3.9.0",
+				"Content-Type": "application/json; charset=UTF-8",
+				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
+				"x-picnic-did": "open.app.picnic.homey",
+				"x-picnic-agent": "30100;1.15.233-#15158"
+			}
+		}
+
+		this.debug("Verifying 2FA code")
+
+		return new Promise((resolve) => {
+			const req = http.request(options, (res) => {
+				let body = '';
+				res.setEncoding('utf8');
+				res.on('data', (chunk) => { body += chunk; });
+				res.on('end', () => {
+					if (res.statusCode >= 200 && res.statusCode < 300) {
+						const newAuth = res.headers['x-picnic-auth'];
+						if (newAuth) {
+							this.debug("2FA verification succeeded, new auth token received.")
+							this.homey.settings.set("x-picnic-auth", newAuth);
+							this.homey.settings.unset("x-picnic-auth-pending");
+							this.homey.settings.set("2fa_pending", false);
+						} else {
+							this.debug("2FA verification succeeded but no new auth token in response, keeping existing token.")
+						}
+						this.pollOrder();
+						resolve("success");
+					} else {
+						this.debug("ERROR: 2FA verification failed. Status: " + res.statusCode + " body: " + body)
+						resolve("Invalid 2FA code. Please try again.");
+					}
+				});
+			});
+
+			req.on('error', (e) => {
+				this.debug("ERROR: Problem with 2FA verify request: " + e.message)
+				resolve("Problem with request or 2FA verification failed.");
 			});
 
 			req.write(json_data);
