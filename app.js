@@ -45,12 +45,14 @@ class Picnic extends Homey.App {
 		this.homey.settings.set("additemLock", false)
 
 		// simulate fresh install
-		//this.homey.settings.unset("order_status")
-		//this.homey.settings.unset("delivery_eta_start")
-		//this.homey.settings.unset("x-picnic-auth")
-		//this.homey.settings.unset("username")
-		//this.homey.settings.unset("password")
-		//this.homey.settings.set("order_status", "delivery_announced")
+		// this.homey.settings.unset("order_status")
+		// this.homey.settings.unset("delivery_eta_start")
+		// this.homey.settings.unset("x-picnic-auth")
+		// this.homey.settings.unset("x-picnic-auth-pending")
+		// this.homey.settings.unset("2fa_pending")
+		// this.homey.settings.unset("username")
+		// this.homey.settings.unset("password")
+		// this.homey.settings.set("order_status", "delivery_announced")
 
 		// conversion order_status code for all versions before 3.2.1
 		// this prevents unnecessary triggers being fired when <3.2.1 is upgraded to 3.2.2 and above
@@ -456,7 +458,7 @@ class Picnic extends Homey.App {
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"x-picnic-auth": this.homey.settings.get("x-picnic-auth"),
+				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
 				"x-picnic-did": "open.app.picnic.homey",
 				"x-picnic-agent": "30100;1.15.233-#15158"
 			}
@@ -501,7 +503,7 @@ class Picnic extends Homey.App {
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"x-picnic-auth": this.homey.settings.get("x-picnic-auth"),
+				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
 				"x-picnic-did": "open.app.picnic.homey",
 				"x-picnic-agent": "30100;1.15.233-#15158"
 			}
@@ -520,6 +522,8 @@ class Picnic extends Homey.App {
 						if (newAuth) {
 							this.debug("2FA verification succeeded, new auth token received.")
 							this.homey.settings.set("x-picnic-auth", newAuth);
+							this.homey.settings.unset("x-picnic-auth-pending");
+							this.homey.settings.set("2fa_pending", false);
 						} else {
 							this.debug("2FA verification succeeded but no new auth token in response, keeping existing token.")
 						}
