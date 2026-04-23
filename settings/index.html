@@ -251,6 +251,9 @@
           resend2faElement.addEventListener('click', function(e) {
             Homey.api('POST', '/generate2fa', { 'channel': 'SMS' }, function( err, result ) {
               if( err ) return Homey.alert(err);
+              if (result !== 'success') {
+                return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
+              }
               Homey.alert(Homey.__('settings.2fa.code-sent'));
             });
           });
