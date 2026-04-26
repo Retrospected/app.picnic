@@ -92,7 +92,7 @@
   "3.4.3": {
     "en": "Another bugfix adding products via action card due to changed JSON structure"
   },
-  "3.5.0": {
+  "3.5.1": {
     "en": "Added support for 2FA and improved order status retrieval"
   }
 }

@@ -40,7 +40,7 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
-### 3.5.0
+### 3.5.1
 
 - Adding support for the 2FA authentication flow and fixing adding products
 

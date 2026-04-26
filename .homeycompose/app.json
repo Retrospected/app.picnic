@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "name": {
@@ -40,7 +40,10 @@
   "contributors": {
     "developers": [
       {
-        "name": "Sander Maas"
+        "name": "🇳🇱 Sander Maas"
+      },
+      {
+        "name": "🇳🇱 Paul Vermeulen"
       }
     ]
   },
