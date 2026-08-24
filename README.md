@@ -49,7 +49,7 @@ The following order specific global tokens are available:
 - Renamed the trigger "Groceries will be delivered soon" to "Delivery time has been announced", because it fires as soon as Picnic publishes the delivery window, usually hours before the delivery. Existing flows keep working, the card kept its id
 - Added a new "Groceries will be delivered soon" trigger that fires a configurable number of minutes (30 by default) before the delivery window starts
 - Delivery window updates after the announcement are now picked up, so the tokens and the window triggers follow Picnic instead of sticking to the first estimate
-- Scheduled jobs are cancelled once the groceries are delivered, so the end of window trigger no longer fires after the delivery
+- The delivered soon warning and the raised poll rate stop once the groceries are delivered. The start and end of window triggers keep firing, they mark the window Picnic announced rather than the van, unless the delivery arrived before that window even started
 - Moments that already passed are no longer silently dropped when the app restarts halfway through a delivery window
 - Added tokens to the delivered, start of window and end of window triggers
 - Eta timestamps are formatted in Homey's timezone

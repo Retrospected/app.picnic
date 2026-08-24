@@ -4,7 +4,7 @@ const Homey = require('homey');
 const actions = require('./lib/actions.js');
 const conditions = require('./lib/conditions.js')
 const utils = require('./lib/utils.js');
-const { deriveOrderEvent } = require('./lib/orderevent.js');
+const { deriveOrderEvent, windowTriggersStillApply } = require('./lib/orderevent.js');
 const eta = require('./lib/eta.js');
 
 var http = require("https");
@@ -46,6 +46,7 @@ class Picnic extends Homey.App {
 
 		this._deliveryWindowJobs = [];
 		this._deliverySoonJobs = [];
+		this._pollRateJobs = [];
 
 		this.homey.settings.set("additemLock", false)
 
@@ -335,9 +336,7 @@ class Picnic extends Homey.App {
 						else if (orderEvent["event"] == 'groceries_delivered') {
 							this.debug("Order changed to groceries_delivered, firing trigger")
 
-							// the window triggers are pointless once the crate is
-							// on the counter, and the van is often early
-							this.cancelDeliverySchedule()
+							this.pruneDeliverySchedule(orderEvent["delivery_time"])
 
 							// the delivery this trigger is about, so a flow does not
 							// have to read the global tokens to know what arrived
@@ -424,6 +423,27 @@ class Picnic extends Homey.App {
 	cancelDeliverySchedule() {
 		this._cancelJobs(this._deliveryWindowJobs, "delivery window");
 		this._cancelJobs(this._deliverySoonJobs, "delivered soon");
+		this._cancelJobs(this._pollRateJobs, "poll rate");
+	}
+
+	// What is left of the schedule once the groceries are on the counter. The
+	// warning and the faster polling are about a delivery that is still coming,
+	// so they go. The window triggers stay: they have marked the window Picnic
+	// announced since they were added, not the moment the van showed up, and
+	// flows are built on that. Picnic delivering early does not unannounce the
+	// window. The one exception is a delivery that beats the window to it, since
+	// that window never became real.
+	pruneDeliverySchedule(deliveredAt) {
+		this._cancelJobs(this._deliverySoonJobs, "delivered soon");
+		this._cancelJobs(this._pollRateJobs, "poll rate");
+
+		if (windowTriggersStillApply(this.homey.settings.get("delivery_eta_start"), deliveredAt)) {
+			this.debug("Keeping the announced window triggers planned, they are about the window rather than about the delivery");
+			return;
+		}
+
+		this.debug("Delivered before the announced window started, so its start and end triggers have nothing left to mark");
+		this._cancelJobs(this._deliveryWindowJobs, "delivery window");
 	}
 
 	// one job per unique head start, the run listener sorts out which flow gets it
@@ -492,7 +512,7 @@ class Picnic extends Homey.App {
 		// scheduling increase of the polling rate 30min before the delivery time
 		if (this._scheduleJob(deliveryStartMin30, "the poll rate increase", () => {
 			this.changeInterval(DELIVERY_POLL_INTERVAL);
-		}, this._deliveryWindowJobs)) {
+		}, this._pollRateJobs)) {
 			this.debug("Until that time, using ORDERED interval");
 			this.changeInterval(ORDERED_POLL_INTERVAL);
 		} else if (deliveryEnd > now) {
