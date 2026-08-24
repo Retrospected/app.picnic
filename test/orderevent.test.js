@@ -3,12 +3,14 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { deriveOrderEvent } = require('../lib/orderevent.js');
+const { deriveOrderEvent, windowTriggersStillApply } = require('../lib/orderevent.js');
 
 const SLOT = {
   window_start: "2026-07-28T16:00:00.000+02:00",
   window_end: "2026-07-28T17:00:00.000+02:00"
 };
+
+const NOW = "2026-07-28T16:21:00.000+02:00";
 
 function summary(extra) {
   return [Object.assign({
@@ -97,16 +99,68 @@ test('an empty response after a delivery changes nothing', () => {
   assert.strictEqual(deriveOrderEvent([], "groceries_delivered"), null);
 });
 
-test('an empty response while an order was tracked means it has been delivered', () => {
-  assert.deepStrictEqual(deriveOrderEvent([], "delivery_announced"), { event: "groceries_delivered" });
+// The summary is asked for CURRENT deliveries, so a completed one usually
+// disappears from the response instead of showing up with a delivery_time.
+// Without a fallback the delivered trigger would hand out an empty token on
+// what is the most common way for a delivery to end.
+test('an empty response while an order was tracked means it has been delivered just now', () => {
+  assert.deepStrictEqual(deriveOrderEvent([], "delivery_announced", null, NOW), {
+    event: "groceries_delivered",
+    delivery_time: NOW
+  });
+});
+
+test('a delivery time Picnic does not spell out falls back to the moment of the poll', () => {
+  const event = deriveOrderEvent(summary({ delivery_time: { end: "2026-07-28T16:23:00.000+02:00" } }), "delivery_announced", null, NOW);
+
+  assert.strictEqual(event.delivery_time, NOW);
+});
+
+test('the moment of the poll defaults to the current time', () => {
+  const before = Date.now();
+  const event = deriveOrderEvent([], "delivery_announced");
+  const delivered = new Date(event.delivery_time).getTime();
+
+  assert.ok(delivered >= before && delivered <= Date.now(), "expected " + event.delivery_time + " to be about now");
 });
 
 // Pre-existing behaviour: a fresh install without any order reports a delivery
 // once, so the app settles on the delivered state and the slow poll interval.
 test('an empty response without a stored status reports a delivery', () => {
-  assert.deepStrictEqual(deriveOrderEvent([], null), { event: "groceries_delivered" });
+  assert.deepStrictEqual(deriveOrderEvent([], null, null, NOW), {
+    event: "groceries_delivered",
+    delivery_time: NOW
+  });
 });
 
 test('a response that is not a list is ignored', () => {
   assert.strictEqual(deriveOrderEvent({ error: "nope" }, "groceries_ordered"), null);
+});
+
+test('a delivery inside the announced window keeps the window triggers', () => {
+  assert.strictEqual(windowTriggersStillApply(SLOT.window_start, "2026-07-28T16:18:00.000+02:00"), true);
+});
+
+test('a delivery after the announced window keeps the window triggers', () => {
+  assert.strictEqual(windowTriggersStillApply(SLOT.window_start, "2026-07-28T18:00:00.000+02:00"), true);
+});
+
+test('a delivery before the announced window drops the window triggers', () => {
+  assert.strictEqual(windowTriggersStillApply(SLOT.window_start, "2026-07-28T15:12:00.000+02:00"), false);
+});
+
+test('an unknown window has no triggers worth keeping', () => {
+  assert.strictEqual(windowTriggersStillApply(undefined, "2026-07-28T16:18:00.000+02:00"), false);
+  assert.strictEqual(windowTriggersStillApply(null, "2026-07-28T16:18:00.000+02:00"), false);
+  assert.strictEqual(windowTriggersStillApply("", "2026-07-28T16:18:00.000+02:00"), false);
+  assert.strictEqual(windowTriggersStillApply("not a timestamp", "2026-07-28T16:18:00.000+02:00"), false);
+});
+
+test('an unreadable delivery moment leaves the window triggers alone', () => {
+  assert.strictEqual(windowTriggersStillApply(SLOT.window_start, "not a timestamp"), true);
+});
+
+test('a delivery moment defaults to now, so a passed window keeps its triggers', () => {
+  assert.strictEqual(windowTriggersStillApply(SLOT.window_start), true);
+  assert.strictEqual(windowTriggersStillApply(new Date(Date.now() + 60000).toISOString()), false);
 });

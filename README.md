@@ -26,7 +26,7 @@ Polling the status of your Picnic account and providing trigger flowcards based 
 - Your groceries have been delivered, with tokens:
   - eta date
   - eta begin and eta end of the timeframe the delivery was expected in
-  - delivery time, the moment the groceries were actually delivered
+  - delivery time, the moment the groceries were actually delivered. Picnic usually drops a finished delivery from its response without saying when it arrived, in which case this is the moment the app noticed
 
 ## Flow Actions
 - Adding a product to your basket based on the name of the product passed as an argument.
