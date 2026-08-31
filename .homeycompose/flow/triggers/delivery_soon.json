@@ -1,0 +1,55 @@
+{
+    "id": "delivery_soon",
+    "title": {
+      "en": "Groceries will be delivered soon",
+      "nl": "Boodschappen worden binnenkort geleverd"
+    },
+    "titleFormatted": {
+      "en": "Groceries will be delivered in [[minutes]] minutes",
+      "nl": "Boodschappen worden over [[minutes]] minuten bezorgd"
+    },
+    "hint": {
+      "en": "Triggers the configured number of minutes before the start of the delivery window.",
+      "nl": "Vuurt het ingestelde aantal minuten vóór het begin van het bezorgvenster."
+    },
+    "args": [
+      {
+        "name": "minutes",
+        "type": "number",
+        "min": 1,
+        "max": 240,
+        "step": 1,
+        "value": 30,
+        "placeholder": {
+          "en": "minutes",
+          "nl": "minuten"
+        }
+      }
+    ],
+    "tokens": [
+      {
+        "name": "eta_start",
+        "type": "string",
+        "title": {
+          "en": "eta begin"
+        },
+        "example": "20:25"
+      },
+      {
+        "name": "eta_end",
+        "type": "string",
+        "title": {
+          "en": "eta end"
+        },
+        "example": "20:45"
+      },
+      {
+        "name": "eta_date",
+        "type": "string",
+        "title": {
+          "en": "eta date"
+        },
+        "example": "2023-03-28"
+      }
+    ]
+}

@@ -3,5 +3,40 @@
     "title": {
       "en": "Groceries have been delivered",
       "nl": "Boodschappen zijn bezorgd"
-    }
+    },
+    "tokens": [
+      {
+        "name": "delivery_time",
+        "type": "string",
+        "title": {
+          "en": "delivery time",
+          "nl": "bezorgtijd"
+        },
+        "example": "20:31"
+      },
+      {
+        "name": "eta_start",
+        "type": "string",
+        "title": {
+          "en": "eta begin"
+        },
+        "example": "20:25"
+      },
+      {
+        "name": "eta_end",
+        "type": "string",
+        "title": {
+          "en": "eta end"
+        },
+        "example": "20:45"
+      },
+      {
+        "name": "eta_date",
+        "type": "string",
+        "title": {
+          "en": "eta date"
+        },
+        "example": "2023-03-28"
+      }
+    ]
 }

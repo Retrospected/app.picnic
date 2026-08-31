@@ -3,5 +3,31 @@
     "title": {
       "en": "End of the time frame when the delivery is announced",
       "nl": "Einde van het tijdsbestek van levering"
-    }
+    },
+    "tokens": [
+      {
+        "name": "eta_start",
+        "type": "string",
+        "title": {
+          "en": "eta begin"
+        },
+        "example": "20:25"
+      },
+      {
+        "name": "eta_end",
+        "type": "string",
+        "title": {
+          "en": "eta end"
+        },
+        "example": "20:45"
+      },
+      {
+        "name": "eta_date",
+        "type": "string",
+        "title": {
+          "en": "eta date"
+        },
+        "example": "2023-03-28"
+      }
+    ]
 }

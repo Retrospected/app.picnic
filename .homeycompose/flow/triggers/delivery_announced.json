@@ -1,8 +1,12 @@
 {
     "id": "delivery_announced",
     "title": {
-      "en": "Groceries will be delivered soon",
-      "nl": "Boodschappen worden binnenkort geleverd"
+      "en": "Delivery time has been announced",
+      "nl": "Bezorgmoment is bekend"
+    },
+    "hint": {
+      "en": "Triggers as soon as Picnic publishes the estimated delivery window. This is usually several hours before the actual delivery.",
+      "nl": "Vuurt zodra Picnic het geschatte bezorgvenster bekendmaakt. Dat is meestal enkele uren vóór de bezorging zelf."
     },
     "tokens": [
       {

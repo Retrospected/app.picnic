@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "app.picnic",
-  "version": "3.5.1",
+  "version": "3.6.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
   "name": {
@@ -89,8 +89,12 @@
       {
         "id": "delivery_announced",
         "title": {
-          "en": "Groceries will be delivered soon",
-          "nl": "Boodschappen worden binnenkort geleverd"
+          "en": "Delivery time has been announced",
+          "nl": "Bezorgmoment is bekend"
+        },
+        "hint": {
+          "en": "Triggers as soon as Picnic publishes the estimated delivery window. This is usually several hours before the actual delivery.",
+          "nl": "Vuurt zodra Picnic het geschatte bezorgvenster bekendmaakt. Dat is meestal enkele uren vóór de bezorging zelf."
         },
         "tokens": [
           {
@@ -124,21 +128,163 @@
         "title": {
           "en": "Start of the time frame when the delivery is announced",
           "nl": "Begin van het tijdsbestek van levering"
-        }
+        },
+        "tokens": [
+          {
+            "name": "eta_start",
+            "type": "string",
+            "title": {
+              "en": "eta begin"
+            },
+            "example": "20:25"
+          },
+          {
+            "name": "eta_end",
+            "type": "string",
+            "title": {
+              "en": "eta end"
+            },
+            "example": "20:45"
+          },
+          {
+            "name": "eta_date",
+            "type": "string",
+            "title": {
+              "en": "eta date"
+            },
+            "example": "2023-03-28"
+          }
+        ]
       },
       {
         "id": "delivery_announced_end_time",
         "title": {
           "en": "End of the time frame when the delivery is announced",
           "nl": "Einde van het tijdsbestek van levering"
-        }
+        },
+        "tokens": [
+          {
+            "name": "eta_start",
+            "type": "string",
+            "title": {
+              "en": "eta begin"
+            },
+            "example": "20:25"
+          },
+          {
+            "name": "eta_end",
+            "type": "string",
+            "title": {
+              "en": "eta end"
+            },
+            "example": "20:45"
+          },
+          {
+            "name": "eta_date",
+            "type": "string",
+            "title": {
+              "en": "eta date"
+            },
+            "example": "2023-03-28"
+          }
+        ]
+      },
+      {
+        "id": "delivery_soon",
+        "title": {
+          "en": "Groceries will be delivered soon",
+          "nl": "Boodschappen worden binnenkort geleverd"
+        },
+        "titleFormatted": {
+          "en": "Groceries will be delivered in [[minutes]] minutes",
+          "nl": "Boodschappen worden over [[minutes]] minuten bezorgd"
+        },
+        "hint": {
+          "en": "Triggers the configured number of minutes before the start of the delivery window.",
+          "nl": "Vuurt het ingestelde aantal minuten vóór het begin van het bezorgvenster."
+        },
+        "args": [
+          {
+            "name": "minutes",
+            "type": "number",
+            "min": 1,
+            "max": 240,
+            "step": 1,
+            "value": 30,
+            "placeholder": {
+              "en": "minutes",
+              "nl": "minuten"
+            }
+          }
+        ],
+        "tokens": [
+          {
+            "name": "eta_start",
+            "type": "string",
+            "title": {
+              "en": "eta begin"
+            },
+            "example": "20:25"
+          },
+          {
+            "name": "eta_end",
+            "type": "string",
+            "title": {
+              "en": "eta end"
+            },
+            "example": "20:45"
+          },
+          {
+            "name": "eta_date",
+            "type": "string",
+            "title": {
+              "en": "eta date"
+            },
+            "example": "2023-03-28"
+          }
+        ]
       },
       {
         "id": "groceries_delivered",
         "title": {
           "en": "Groceries have been delivered",
           "nl": "Boodschappen zijn bezorgd"
-        }
+        },
+        "tokens": [
+          {
+            "name": "delivery_time",
+            "type": "string",
+            "title": {
+              "en": "delivery time",
+              "nl": "bezorgtijd"
+            },
+            "example": "20:31"
+          },
+          {
+            "name": "eta_start",
+            "type": "string",
+            "title": {
+              "en": "eta begin"
+            },
+            "example": "20:25"
+          },
+          {
+            "name": "eta_end",
+            "type": "string",
+            "title": {
+              "en": "eta end"
+            },
+            "example": "20:45"
+          },
+          {
+            "name": "eta_date",
+            "type": "string",
+            "title": {
+              "en": "eta date"
+            },
+            "example": "2023-03-28"
+          }
+        ]
       },
       {
         "id": "groceries_ordered",

@@ -16,13 +16,17 @@ Polling the status of your Picnic account and providing trigger flowcards based 
   - eta date
   - eta begin, returning the begin of the 60 minutes delivery timeframe
   - eta end, returning the end of the 60 minutes delivery timeframe
-- Your groceries will be delivered soon (announcement of the 20min delivery timeframe), with tokens:
+- Delivery time has been announced (Picnic published the 20min delivery timeframe, usually several hours before the delivery itself), with tokens:
   - eta date
   - eta begin, returning the begin of the 20 minutes delivery timeframe
   - eta end, returning the end of the 20 minutes delivery timeframe
-- Start of the time frame when the delivery is announced
-- End of the time frame when the delivery is announced
-- Your groceries have been delivered
+- Your groceries will be delivered soon, a configurable number of minutes (30 by default) before the delivery timeframe starts, with the same tokens
+- Start of the time frame when the delivery is announced, with the same tokens
+- End of the time frame when the delivery is announced, with the same tokens
+- Your groceries have been delivered, with tokens:
+  - eta date
+  - eta begin and eta end of the timeframe the delivery was expected in
+  - delivery time, the moment the groceries were actually delivered. Picnic usually drops a finished delivery from its response without saying when it arrived, in which case this is the moment the app noticed
 
 ## Flow Actions
 - Adding a product to your basket based on the name of the product passed as an argument.
@@ -39,6 +43,16 @@ The following order specific global tokens are available:
 - End of the delivery window
 
 ## CHANGELOG
+
+### 3.6.0
+
+- Renamed the trigger "Groceries will be delivered soon" to "Delivery time has been announced", because it fires as soon as Picnic publishes the delivery window, usually hours before the delivery. Existing flows keep working, the card kept its id
+- Added a new "Groceries will be delivered soon" trigger that fires a configurable number of minutes (30 by default) before the delivery window starts
+- Delivery window updates after the announcement are now picked up, so the tokens and the window triggers follow Picnic instead of sticking to the first estimate
+- The delivered soon warning and the raised poll rate stop once the groceries are delivered. The start and end of window triggers keep firing, they mark the window Picnic announced rather than the van, unless the delivery arrived before that window even started
+- Moments that already passed are no longer silently dropped when the app restarts halfway through a delivery window
+- Added tokens to the delivered, start of window and end of window triggers
+- Eta timestamps are formatted in Homey's timezone
 
 ### 3.5.1
 

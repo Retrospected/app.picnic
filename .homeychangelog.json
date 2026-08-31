@@ -94,5 +94,8 @@
   },
   "3.5.1": {
     "en": "Added support for 2FA and improved order status retrieval"
+  },
+  "3.6.0": {
+    "en": "'Groceries will be delivered soon' fired as soon as Picnic planned its route, often hours before the delivery. That card is now called 'Delivery time has been announced' and your existing flows keep working on it. A new 'Groceries will be delivered soon' card fires a number of minutes you pick, 30 by default, before the delivery window starts."
   }
 }
