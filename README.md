@@ -44,6 +44,13 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.6.1
+
+- The authentication status in the settings said NOT OK while the login was fine: the check was the last call still on Picnic's api/14, which Picnic no longer serves. It now asks the same api/15 Picnic is asked for everything else
+- The status only says NOT OK when Picnic refuses the token with a 401 or a 403. A check that could not reach Picnic reports that instead of blaming the credentials, and a login waiting for its SMS code is reported as such
+- The outcome of every check, including the status code Picnic answered with, is written to the app log
+- A 2FA verification that Picnic confirms without handing back a new token no longer throws away the token from the login, which left the app with no session at all
+
 ### 3.6.0
 
 - Renamed the trigger "Groceries will be delivered soon" to "Delivery time has been announced", because it fires as soon as Picnic publishes the delivery window, usually hours before the delivery. Existing flows keep working, the card kept its id
