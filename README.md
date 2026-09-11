@@ -54,6 +54,8 @@ The following order specific global tokens are available:
 - A repeating failure is logged when it starts and once more when it clears, so a diagnostic report taken during a delivery window is not filled with the same line every minute
 - A failed order request used to leave the poll hanging without a word. It now reports the failure
 - A missing delivery window is reported as unknown instead of planning every job for 1 january 1970 and logging that each one already passed
+- Adding a product no longer takes the app down when Picnic answers with something unexpected. Any answer that does not confirm the product is reported to the flow as a failure instead of throwing inside the response handler, where nothing caught it
+- A failed add product request releases the cart lock it took, so a later add product action is not left waiting on a lock that never opens
 
 ### 3.6.0
 
