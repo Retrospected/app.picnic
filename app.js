@@ -5,6 +5,7 @@ const actions = require('./lib/actions.js');
 const conditions = require('./lib/conditions.js')
 const utils = require('./lib/utils.js');
 const { deriveOrderEvent, windowTriggersStillApply } = require('./lib/orderevent.js');
+const { PICNIC_AGENT, PICNIC_DID } = require('./lib/picnicheaders.js');
 const eta = require('./lib/eta.js');
 
 var http = require("https");
@@ -634,7 +635,9 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"client_id": "30100",
-				"device_id": "open.app.picnic.homey"
+				"device_id": PICNIC_DID,
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
@@ -701,8 +704,8 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
-				"x-picnic-did": "open.app.picnic.homey",
-				"x-picnic-agent": "30100;1.15.233-#15158"
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
@@ -746,8 +749,8 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
-				"x-picnic-did": "open.app.picnic.homey",
-				"x-picnic-agent": "30100;1.15.233-#15158"
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
@@ -835,8 +838,8 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"x-picnic-auth": token,
-				"x-picnic-did": "open.app.picnic.homey",
-				"x-picnic-agent": "30100;1.15.233-#15158"
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
