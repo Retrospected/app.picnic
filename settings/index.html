@@ -185,6 +185,11 @@
             else if (result == "NOT OK" ) {
               statusElement.style.color = "red";
             }
+            else {
+              // 2FA still pending, or the check could not reach Picnic: not a
+              // reason to point at the credentials
+              statusElement.style.color = "orange";
+            }
             statusElement.innerHTML = result;
           });
 

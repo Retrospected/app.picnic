@@ -707,8 +707,16 @@ class Picnic extends Homey.App {
 							this.homey.settings.set("x-picnic-auth", newAuth);
 							this.homey.settings.unset("x-picnic-auth-pending");
 							this.homey.settings.set("2fa_pending", false);
+						} else if (this.homey.settings.get("x-picnic-auth-pending")) {
+							// the login moved the token to the pending key and
+							// unset x-picnic-auth, so there is no existing token
+							// to keep: the pending one is the verified one now
+							this.debug("2FA verification succeeded without a new auth token, promoting the token the login handed us.")
+							this.homey.settings.set("x-picnic-auth", this.homey.settings.get("x-picnic-auth-pending"));
+							this.homey.settings.unset("x-picnic-auth-pending");
+							this.homey.settings.set("2fa_pending", false);
 						} else {
-							this.debug("2FA verification succeeded but no new auth token in response, keeping existing token.")
+							this.debug("2FA verification succeeded but there is no token to store, logging in again is needed.")
 						}
 						this.pollOrder();
 						resolve("success");
@@ -737,32 +745,68 @@ class Picnic extends Homey.App {
 		this.homey.settings.set("order_status", "");
 	}
 
+	// Whether Picnic still accepts the token we have. Only Picnic refusing the
+	// credentials is "NOT OK": a call that never got an answer says nothing
+	// about them, and saying NOT OK anyway sends people looking for a login
+	// problem they do not have. The outcome is logged unconditionally, the
+	// check runs when someone opens the settings page and the status code is
+	// the one thing needed to tell these cases apart afterwards.
 	async getStatus() {
+		if (this.homey.settings.get("2fa_pending") === true || this.homey.settings.get("x-picnic-auth-pending")) {
+			this.homey.log("Authentication status check: waiting for a 2FA code to be verified")
+			return "2FA PENDING";
+		}
+
+		const token = this.homey.settings.get("x-picnic-auth");
+
+		if (!token) {
+			this.homey.log("Authentication status check: no auth token stored, so not asking Picnic")
+			return "NOT OK";
+		}
+
 		var options = {
 			hostname: this.homey.settings.get("url"),
 			port: 443,
-			path: '/api/14/cart',
+			path: '/api/15/cart',
 			method: 'GET',
-			timeout: 1000,
+			timeout: 5000,
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"x-picnic-auth": this.homey.settings.get("x-picnic-auth"),
-				"x-picnic-did": "open.app.picnic.homey"
+				"x-picnic-auth": token,
+				"x-picnic-did": "open.app.picnic.homey",
+				"x-picnic-agent": "30100;1.15.233-#15158"
 			}
 		}
+
 		return new Promise((resolve) => {
 			const req = http.request(options, (res) => {
-				if (res.statusCode == 200) {
+				// the body is not used, reading it releases the socket
+				res.resume();
+
+				this.homey.log("Authentication status check: GET https://" + options.hostname + options.path + " responded " + res.statusCode)
+
+				if (res.statusCode >= 200 && res.statusCode < 300) {
 					resolve("OK");
 				}
-				else {
+				else if (res.statusCode == 401 || res.statusCode == 403) {
 					resolve("NOT OK");
+				}
+				else {
+					resolve("UNKNOWN (HTTP " + res.statusCode + ")");
 				}
 			});
 
-			req.on('error', () => {
-				resolve("NOT OK");
+			req.on('timeout', () => {
+				// a socket timeout does not end the request by itself, without
+				// this the promise would never settle and the settings page
+				// would sit on "loading..." forever
+				req.destroy(new Error("no response within " + options.timeout + "ms"));
+			});
+
+			req.on('error', (e) => {
+				this.homey.log("Authentication status check: request to " + options.hostname + " failed: " + e.message)
+				resolve("UNKNOWN (" + e.message + ")");
 			});
 
 			req.end();
