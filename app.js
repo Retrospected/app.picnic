@@ -5,6 +5,7 @@ const actions = require('./lib/actions.js');
 const conditions = require('./lib/conditions.js')
 const utils = require('./lib/utils.js');
 const { deriveOrderEvent, windowTriggersStillApply } = require('./lib/orderevent.js');
+const { PICNIC_AGENT, PICNIC_DID } = require('./lib/picnicheaders.js');
 const eta = require('./lib/eta.js');
 
 var http = require("https");
@@ -83,6 +84,8 @@ class Picnic extends Homey.App {
 
 		this.setUrl()
 
+		this.logState("State at startup")
+
 		if (this.homey.settings.getKeys().indexOf("x-picnic-auth") != -1) {
 			this.debug("Auth found, retrieving order")
 			this.pollOrder();
@@ -90,7 +93,7 @@ class Picnic extends Homey.App {
 	}
 
 	async onUninit() {
-		this.debug("Picnic is stopping, cleaning up the timers")
+		this.info("Picnic is stopping, cleaning up the timers")
 		this.cancelDeliverySchedule();
 		clearInterval(runningInterval);
 	}
@@ -219,6 +222,55 @@ class Picnic extends Homey.App {
 		}
 	}
 
+	// Always logged, unlike debug(): these are the lines a diagnostic report
+	// needs to explain what the app was doing and what state it was in.
+	info(message) {
+		try {
+			this.homey.log(message);
+		} catch (exception) {
+			this.homey.error(exception);
+		}
+	}
+
+	// Polling runs as often as every minute, so a failure that keeps happening
+	// is logged when it starts and once more when it clears, rather than on
+	// every attempt: a report should show a problem, not be buried in it.
+	_logProblem(subject, problem) {
+		if (this._problems === undefined) this._problems = {};
+
+		const previous = this._problems[subject];
+
+		if (previous === problem) return;
+		if (previous === undefined && !problem) {
+			this._problems[subject] = problem;
+			return;
+		}
+
+		this._problems[subject] = problem;
+		this.info(problem ? subject + " failed: " + problem : subject + " works again");
+	}
+
+	// One snapshot of everything that decides what the app does next. No
+	// username, password or token: whether they are stored is what matters and
+	// a report is read by someone other than the user.
+	logState(reason) {
+		const stored = (key) => !!this.homey.settings.get(key);
+		const or = (key, fallback) => this.homey.settings.get(key) || fallback;
+
+		this.info(reason + ": version " + ((this.homey.manifest && this.homey.manifest.version) || "unknown")
+			+ ", country " + or("country", "unset")
+			+ ", endpoint " + or("url", "unset"));
+
+		this.info(reason + ": username " + (stored("username") ? "stored" : "missing")
+			+ ", password " + (stored("password") ? "stored" : "missing")
+			+ ", auth token " + (stored("x-picnic-auth") ? "stored" : "missing")
+			+ (stored("x-picnic-auth-pending") || this.homey.settings.get("2fa_pending") === true
+				? ", a 2FA code is still waiting to be verified" : ""));
+
+		this.info(reason + ": order status " + or("order_status", "unknown")
+			+ ", delivery window " + or("delivery_eta_start", "unknown") + " until " + or("delivery_eta_end", "unknown"));
+	}
+
 	debug(message) {
 		try {
 			if (DEBUG) {
@@ -259,7 +311,7 @@ class Picnic extends Homey.App {
 						return
 					}
 					if (orderEvent.toString() == "Error: unauthorized") {
-						this.debug("Error: unauthorized, please check your credentials")
+						this.info("Picnic rejected the auth token while polling, logging in again")
 						this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function (callBack) {
 							return Promise.reject(new Error('Re-authentication failed.'));
 						});
@@ -279,6 +331,7 @@ class Picnic extends Homey.App {
 
 							const data = { 'price': price, 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
 
+							this.info("Firing the groceries ordered trigger, delivery on " + eta_date + " between " + eta_start + " and " + eta_end + ", price " + price)
 							this._groceriesOrderedTrigger.trigger(data)
 
 							this.orderPrice.setValue(price)
@@ -300,6 +353,7 @@ class Picnic extends Homey.App {
 							this.debug("Order changed to delivery_announced, firing trigger")
 							const tokens = this._etaTokens(orderEvent["eta2_start"], orderEvent["eta2_end"])
 
+							this.info("Firing the delivery announced trigger, window on " + tokens["eta_date"] + " between " + tokens["eta_start"] + " and " + tokens["eta_end"])
 							this._deliveryAnnouncedTrigger.trigger(tokens)
 
 							this.orderStatus.setValue("delivery_announced")
@@ -316,9 +370,9 @@ class Picnic extends Homey.App {
 							await this.createDeliverySchedule(orderEvent["eta2_start"], orderEvent["eta2_end"]);
 						}
 						else if (orderEvent["event"] == 'delivery_eta_updated') {
-							this.debug("Picnic moved the delivery window, updating the tokens and rescheduling")
-
 							const tokens = this._etaTokens(orderEvent["eta2_start"], orderEvent["eta2_end"])
+
+							this.info("Picnic moved the delivery window to " + tokens["eta_date"] + " between " + tokens["eta_start"] + " and " + tokens["eta_end"] + ", rescheduling")
 
 							this.orderDeliveryDate.setValue(tokens["eta_date"])
 							this.orderDeliveryStartWindow.setValue(tokens["eta_start"])
@@ -345,6 +399,7 @@ class Picnic extends Homey.App {
 								{ 'delivery_time': this.formatEtaTime(orderEvent["delivery_time"]) }
 							)
 
+							this.info("Firing the groceries delivered trigger, delivered at " + data["delivery_time"])
 							await this._groceriesDelivered.trigger(data)
 
 							await this.orderStatus.setValue("groceries_delivered")
@@ -357,14 +412,14 @@ class Picnic extends Homey.App {
 				})
 					.catch(error => {
 						if (error == "Error: unauthorized") {
-							this.debug("ERROR: unauthorized, trying to retrieve new auth token.")
+							this.info("Picnic rejected the auth token while polling, logging in again")
 							this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function (callback) {
 								this.debug(callback)
 								if (callback == "success") {
 									this.debug("Auth token succesfully renewed.")
 									return Promise.resolve('Success');
 								} else {
-									this.debug("ERROR: Re-authentication failed. Please check your credentials.")
+									this.info("Logging in again failed, the stored credentials are not accepted")
 									return Promise.reject('ERROR: Re-authentication failed. Please check your credentials.');
 								}
 							});
@@ -375,16 +430,16 @@ class Picnic extends Homey.App {
 						}
 					});
 			} else if (this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password")) {
-				this.debug("No JWT token found, so trying to retrieve one by authenticating")
+				this.info("No auth token stored, logging in with the stored credentials")
 				this.login(this.homey.settings.getKeys().indexOf("username"), this.homey.settings.getKeys().indexOf("password"))
 			} else {
-				this.debug("Not polling for new order info due to insufficient authentication details.")
+				this.info("Not polling: no username and password stored, so nothing can be retrieved")
 			}
 		});
 	}
 
 	changeInterval(interval) {
-		this.debug("Changing polling interval to: " + interval / 1000 / 60 + " minutes");
+		this.info("Polling Picnic every " + interval / 1000 / 60 + " minute(s)");
 		clearInterval(runningInterval);
 		runningInterval = setInterval(this.pollOrder.bind(this), interval);
 	}
@@ -396,18 +451,18 @@ class Picnic extends Homey.App {
 		// an invalid date is not refused but read as a recurring spec, which
 		// would fire the job every minute rather than never
 		if (isNaN(runAt.getTime())) {
-			this.debug("Not scheduling " + description + ", the moment to run it at is unknown");
+			this.info("Not scheduling " + description + ", the moment to run it at is unknown");
 			return null;
 		}
 
 		const job = schedule.scheduleJob(runAt, callback);
 
 		if (job === null) {
-			this.debug("Not scheduling " + description + ", " + runAt.toString() + " has already passed");
+			this.info("Not scheduling " + description + ", " + runAt.toString() + " has already passed");
 			return null;
 		}
 
-		this.debug("Scheduled " + description + " at " + runAt.toString());
+		this.info("Scheduled " + description + " at " + runAt.toString());
 		jobs.push(job);
 		return job;
 	}
@@ -438,11 +493,11 @@ class Picnic extends Homey.App {
 		this._cancelJobs(this._pollRateJobs, "poll rate");
 
 		if (windowTriggersStillApply(this.homey.settings.get("delivery_eta_start"), deliveredAt)) {
-			this.debug("Keeping the announced window triggers planned, they are about the window rather than about the delivery");
+			this.info("Keeping the announced window triggers planned, they are about the window rather than about the delivery");
 			return;
 		}
 
-		this.debug("Delivered before the announced window started, so its start and end triggers have nothing left to mark");
+		this.info("Delivered before the announced window started, so its start and end triggers have nothing left to mark");
 		this._cancelJobs(this._deliveryWindowJobs, "delivery window");
 	}
 
@@ -467,6 +522,7 @@ class Picnic extends Homey.App {
 			// an announcement can arrive later than the configured head start,
 			// in which case there is nothing left to warn about
 			this._scheduleJob(runAt, "the delivered soon trigger, " + minutes + " minutes upfront", () => {
+				this.info("Firing the delivered soon trigger, " + minutes + " minutes before the window starts")
 				this._deliverySoonTrigger.trigger(this._etaTokens(eta_start, eta_end), { 'minutes': minutes })
 			}, this._deliverySoonJobs);
 		});
@@ -484,8 +540,8 @@ class Picnic extends Homey.App {
 		const eta_end = this.homey.settings.get("delivery_eta_end");
 		const deliveryStart = new Date(eta_start);
 
-		if (isNaN(deliveryStart.getTime())) {
-			this.debug("A delivered soon flow changed, but the delivery window is unknown");
+		if (!eta_start || isNaN(deliveryStart.getTime())) {
+			this.info("A delivered soon flow changed, but the delivery window is unknown");
 			return;
 		}
 
@@ -500,8 +556,8 @@ class Picnic extends Homey.App {
 		const deliveryStart = new Date(eta_start);
 		const deliveryEnd = new Date(eta_end);
 
-		if (isNaN(deliveryStart.getTime()) || isNaN(deliveryEnd.getTime())) {
-			this.debug("Not scheduling anything, the delivery window is unknown (start: " + eta_start + ", end: " + eta_end + ")");
+		if (!eta_start || !eta_end || isNaN(deliveryStart.getTime()) || isNaN(deliveryEnd.getTime())) {
+			this.info("Not scheduling anything, the delivery window is unknown (start: " + eta_start + ", end: " + eta_end + ")");
 			this.changeInterval(ORDERED_POLL_INTERVAL);
 			return;
 		}
@@ -525,11 +581,13 @@ class Picnic extends Homey.App {
 
 		// schedule beginning of delivery window trigger
 		this._scheduleJob(deliveryStart, "the start of the delivery window trigger", () => {
+			this.info("Firing the start of the delivery window trigger")
 			this._deliveryAnnouncedTriggerBeginTime.trigger(this._etaTokens(eta_start, eta_end))
 		}, this._deliveryWindowJobs);
 
 		// schedule ending of delivery window trigger
 		this._scheduleJob(deliveryEnd, "the end of the delivery window trigger", () => {
+			this.info("Firing the end of the delivery window trigger")
 			this._deliveryAnnouncedTriggerEndTime.trigger(this._etaTokens(eta_start, eta_end))
 		}, this._deliveryWindowJobs);
 
@@ -564,6 +622,7 @@ class Picnic extends Homey.App {
 
 		this.debug("Logging in with: " + username + " in: " + this.homey.settings.get("country"))
 		this.debug("To URL: " + this.homey.settings.get("url"))
+		this.info("Logging in to the " + (this.homey.settings.get("country") || "unknown") + " store")
 		var json_data = JSON.stringify(post_data)
 
 		var options = {
@@ -576,7 +635,9 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"client_id": "30100",
-				"device_id": "open.app.picnic.homey"
+				"device_id": PICNIC_DID,
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
@@ -597,7 +658,7 @@ class Picnic extends Homey.App {
 						this.homey.settings.set("password", password)
 
 						if (responseData.second_factor_authentication_required === true) {
-							this.debug("2FA required, requesting SMS code.")
+							this.info("Login needs a 2FA code, requesting one over SMS")
 							this.homey.settings.set("x-picnic-auth-pending", res.headers['x-picnic-auth'])
 							this.homey.settings.set("2fa_pending", true)
 							this.homey.settings.unset("x-picnic-auth")
@@ -608,12 +669,13 @@ class Picnic extends Homey.App {
 							this.homey.settings.unset("x-picnic-auth-pending")
 							this.homey.settings.set("2fa_pending", false)
 							this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
+							this.info("Login accepted by Picnic, auth token stored")
 							this.pollOrder();
 							resolve("success");
 						}
 					}
 					else {
-						this.debug("ERROR: Authentication failed. Status: " + res.statusCode)
+						this.info("Login refused by Picnic (HTTP " + res.statusCode + ")")
 						this.homey.app.changeInterval(DEFAULT_POLL_INTERVAL);
 						resolve('Problem with request or authentication failed.');
 					}
@@ -621,7 +683,7 @@ class Picnic extends Homey.App {
 			});
 
 			req.on('error', (e) => {
-				this.debug("ERROR: Problem with request or authentication failed.")
+				this.info("Login request to " + options.hostname + " failed: " + e.message)
 				resolve('Problem with request or authentication failed.');
 			});
 
@@ -642,8 +704,8 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
-				"x-picnic-did": "open.app.picnic.homey",
-				"x-picnic-agent": "30100;1.15.233-#15158"
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
@@ -656,17 +718,17 @@ class Picnic extends Homey.App {
 				res.on('data', (chunk) => { body += chunk; });
 				res.on('end', () => {
 					if (res.statusCode >= 200 && res.statusCode < 300) {
-						this.debug("2FA code requested successfully.")
+						this.info("Picnic sent a 2FA code")
 						resolve("success");
 					} else {
-						this.debug("ERROR: 2FA code request failed. Status: " + res.statusCode + " body: " + body)
+						this.info("Picnic refused to send a 2FA code (HTTP " + res.statusCode + ")")
 						reject(new Error("2FA code request failed: " + res.statusCode));
 					}
 				});
 			});
 
 			req.on('error', (e) => {
-				this.debug("ERROR: Problem with 2FA generate request: " + e.message)
+				this.info("The request for a 2FA code failed: " + e.message)
 				reject(e);
 			});
 
@@ -687,8 +749,8 @@ class Picnic extends Homey.App {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
 				"x-picnic-auth": this.homey.settings.get("x-picnic-auth-pending") || this.homey.settings.get("x-picnic-auth"),
-				"x-picnic-did": "open.app.picnic.homey",
-				"x-picnic-agent": "30100;1.15.233-#15158"
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
 
@@ -703,24 +765,32 @@ class Picnic extends Homey.App {
 					if (res.statusCode >= 200 && res.statusCode < 300) {
 						const newAuth = res.headers['x-picnic-auth'];
 						if (newAuth) {
-							this.debug("2FA verification succeeded, new auth token received.")
+							this.info("2FA code accepted, Picnic handed out a new auth token")
 							this.homey.settings.set("x-picnic-auth", newAuth);
 							this.homey.settings.unset("x-picnic-auth-pending");
 							this.homey.settings.set("2fa_pending", false);
+						} else if (this.homey.settings.get("x-picnic-auth-pending")) {
+							// the login moved the token to the pending key and
+							// unset x-picnic-auth, so there is no existing token
+							// to keep: the pending one is the verified one now
+							this.info("2FA code accepted, keeping the auth token from the login")
+							this.homey.settings.set("x-picnic-auth", this.homey.settings.get("x-picnic-auth-pending"));
+							this.homey.settings.unset("x-picnic-auth-pending");
+							this.homey.settings.set("2fa_pending", false);
 						} else {
-							this.debug("2FA verification succeeded but no new auth token in response, keeping existing token.")
+							this.info("2FA code accepted, but there is no auth token to store, so logging in again is needed")
 						}
 						this.pollOrder();
 						resolve("success");
 					} else {
-						this.debug("ERROR: 2FA verification failed. Status: " + res.statusCode + " body: " + body)
+						this.info("Picnic rejected the 2FA code (HTTP " + res.statusCode + ")")
 						resolve("Invalid 2FA code. Please try again.");
 					}
 				});
 			});
 
 			req.on('error', (e) => {
-				this.debug("ERROR: Problem with 2FA verify request: " + e.message)
+				this.info("The 2FA verification request failed: " + e.message)
 				resolve("Problem with request or 2FA verification failed.");
 			});
 
@@ -737,32 +807,71 @@ class Picnic extends Homey.App {
 		this.homey.settings.set("order_status", "");
 	}
 
+	// Whether Picnic still accepts the token we have. Only Picnic refusing the
+	// credentials is "NOT OK": a call that never got an answer says nothing
+	// about them, and saying NOT OK anyway sends people looking for a login
+	// problem they do not have. The outcome is logged unconditionally, the
+	// check runs when someone opens the settings page and the status code is
+	// the one thing needed to tell these cases apart afterwards.
 	async getStatus() {
+		this.logState("State when the settings page was opened")
+
+		if (this.homey.settings.get("2fa_pending") === true || this.homey.settings.get("x-picnic-auth-pending")) {
+			this.info("Authentication check: a 2FA code is still waiting to be verified")
+			return "2FA PENDING";
+		}
+
+		const token = this.homey.settings.get("x-picnic-auth");
+
+		if (!token) {
+			this.info("Authentication check: no auth token stored, so there is nothing to check")
+			return "NOT OK";
+		}
+
 		var options = {
 			hostname: this.homey.settings.get("url"),
 			port: 443,
-			path: '/api/14/cart',
+			path: '/api/15/cart',
 			method: 'GET',
-			timeout: 1000,
+			timeout: 5000,
 			headers: {
 				"User-Agent": "okhttp/3.9.0",
 				"Content-Type": "application/json; charset=UTF-8",
-				"x-picnic-auth": this.homey.settings.get("x-picnic-auth"),
-				"x-picnic-did": "open.app.picnic.homey"
+				"x-picnic-auth": token,
+				"x-picnic-did": PICNIC_DID,
+				"x-picnic-agent": PICNIC_AGENT
 			}
 		}
+
 		return new Promise((resolve) => {
 			const req = http.request(options, (res) => {
-				if (res.statusCode == 200) {
+				// the body is not used, reading it releases the socket
+				res.resume();
+
+				if (res.statusCode >= 200 && res.statusCode < 300) {
+					this.info("Authentication check: Picnic accepted the token on " + options.path + " (HTTP " + res.statusCode + ")")
 					resolve("OK");
 				}
-				else {
+				else if (res.statusCode == 401 || res.statusCode == 403) {
+					this.info("Authentication check: Picnic refused the token on " + options.path + " (HTTP " + res.statusCode + ")")
 					resolve("NOT OK");
+				}
+				else {
+					this.info("Authentication check: unexpected answer from Picnic on " + options.path + " (HTTP " + res.statusCode + ")")
+					resolve("UNKNOWN (HTTP " + res.statusCode + ")");
 				}
 			});
 
-			req.on('error', () => {
-				resolve("NOT OK");
+			req.on('timeout', () => {
+				// a socket timeout does not end the request by itself, without
+				// this the promise would never settle and the settings page
+				// would sit on "loading..." forever
+				req.destroy(new Error("no response within " + options.timeout + "ms"));
+			});
+
+			req.on('error', (e) => {
+				this.info("Authentication check: could not reach " + options.hostname + ": " + e.message)
+				resolve("UNKNOWN (" + e.message + ")");
 			});
 
 			req.end();
@@ -776,6 +885,8 @@ class Picnic extends Homey.App {
 					//this.debug(this.homey.settings.get("x-picnic-auth"))
 					this.debug(content)
 				}
+				this._logProblem("Retrieving the order", null);
+
 				if (typeof content == 'undefined') return reject("No content received");
 
 				var summary;
@@ -796,11 +907,11 @@ class Picnic extends Homey.App {
 					return resolve(null)
 				}
 
-				this.debug("Retrieved new order status from Picnic: " + orderEvent["event"] + ", old order status was: " + previousStatus)
+				this.info("Order status changed from " + (previousStatus || "unknown") + " to " + orderEvent["event"])
 				return resolve(orderEvent)
 			})
 				.catch(error => {
-					this.debug("ERROR: Order retrieval failed")
+					this._logProblem("Retrieving the order", String(error))
 					reject(error)
 				})
 		})

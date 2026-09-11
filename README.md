@@ -44,6 +44,20 @@ The following order specific global tokens are available:
 
 ## CHANGELOG
 
+### 3.6.1
+
+- The authentication status in the settings said NOT OK while the login was fine: the check was the last call still on Picnic's api/14, which Picnic no longer serves. It now asks the same api/15 Picnic is asked for everything else
+- The status only says NOT OK when Picnic refuses the token with a 401 or a 403. A check that could not reach Picnic reports that instead of blaming the credentials, and a login waiting for its SMS code is reported as such
+- The outcome of every check, including the status code Picnic answered with, is written to the app log
+- A 2FA verification that Picnic confirms without handing back a new token no longer throws away the token from the login, which left the app with no session at all
+- The app log now records what the app is doing without a debug build: the state it starts with, every login and 2FA step and how Picnic answered it, order status changes, which triggers fire and when, what got scheduled for a delivery window and what did not, and every change of the polling interval. No username, password or token is written to it
+- A repeating failure is logged when it starts and once more when it clears, so a diagnostic report taken during a delivery window is not filled with the same line every minute
+- A failed order request used to leave the poll hanging without a word. It now reports the failure
+- A missing delivery window is reported as unknown instead of planning every job for 1 january 1970 and logging that each one already passed
+- Adding a product no longer takes the app down when Picnic answers with something unexpected. Any answer that does not confirm the product is reported to the flow as a failure instead of throwing inside the response handler, where nothing caught it
+- A failed add product request releases the cart lock it took, so a later add product action is not left waiting on a lock that never opens
+- Every call to Picnic now carries the `x-picnic-agent` and `x-picnic-did` headers Picnic asked for in issue #17. Logging in and the order poll were sending one or neither, and the values now live in one place instead of being repeated per request
+
 ### 3.6.0
 
 - Renamed the trigger "Groceries will be delivered soon" to "Delivery time has been announced", because it fires as soon as Picnic publishes the delivery window, usually hours before the delivery. Existing flows keep working, the card kept its id
