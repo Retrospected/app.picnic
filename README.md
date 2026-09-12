@@ -57,6 +57,11 @@ The following order specific global tokens are available:
 - Adding a product no longer takes the app down when Picnic answers with something unexpected. Any answer that does not confirm the product is reported to the flow as a failure instead of throwing inside the response handler, where nothing caught it
 - A failed add product request releases the cart lock it took, so a later add product action is not left waiting on a lock that never opens
 - Every call to Picnic now carries the `x-picnic-agent` and `x-picnic-did` headers Picnic asked for in issue #17. Logging in and the order poll were sending one or neither, and the values now live in one place instead of being repeated per request
+- A failing poll no longer crashes the app with "an unexpected error occured" as the entire report. Whatever went wrong is written to the app log first, with the failure itself, its network or HTTP status code, where in the app it came from and the state the app was in, and the poll keeps running instead of taking the app down
+- Anything that still escapes is logged the same way before the app goes down, so a crash report is no longer the only thing left to go on
+- Picnic answering the order poll with a refusal or an unreadable answer says so, including the status code and what it answered, instead of surfacing later as a parse error that named nothing
+- An order poll that Picnic never answers is given up on after the five seconds it was always meant to wait, instead of waiting forever
+- The order poll no longer logs in with the wrong credentials when it has none stored: it read the position of the setting in a list rather than the setting itself
 
 ### 3.6.0
 

@@ -6,6 +6,7 @@ const conditions = require('./lib/conditions.js')
 const utils = require('./lib/utils.js');
 const { deriveOrderEvent, windowTriggersStillApply } = require('./lib/orderevent.js');
 const { PICNIC_AGENT, PICNIC_DID } = require('./lib/picnicheaders.js');
+const { describeError, describeStack, describeBody, toError } = require('./lib/errors.js');
 const eta = require('./lib/eta.js');
 
 var http = require("https");
@@ -19,11 +20,14 @@ var DELIVERY_POLL_INTERVAL = 1000 * 60 * 1 // 1 minute
 const DEBUG = false
 
 var runningInterval;
+var failureHandlers = null;
 
 class Picnic extends Homey.App {
 
 	onInit() {
 		this.homey.log('Picnic is running...')
+
+		this._logUnexpectedFailures();
 
 		if (DEBUG) {
 			this.debug('DEBUG ENABLED')
@@ -240,14 +244,79 @@ class Picnic extends Homey.App {
 
 		const previous = this._problems[subject];
 
-		if (previous === problem) return;
+		if (previous === problem) return false;
 		if (previous === undefined && !problem) {
 			this._problems[subject] = problem;
-			return;
+			return false;
 		}
 
 		this._problems[subject] = problem;
 		this.info(problem ? subject + " failed: " + problem : subject + " works again");
+		return true;
+	}
+
+	// A rejected promise nobody is waiting on takes the app down, and the crash
+	// report is then the message of whatever was rejected and nothing else.
+	// Write the failure to the log in full before that happens, and hand on a
+	// real Error so a bare string does not arrive as a crash without a stack.
+	_logUnexpectedFailures() {
+		// the handlers outlive the app object, so a restart in the same process
+		// would otherwise stack a second set on top of the first
+		if (failureHandlers !== null) {
+			process.off('unhandledRejection', failureHandlers.rejection);
+			process.off('uncaughtException', failureHandlers.exception);
+		}
+
+		failureHandlers = {
+			rejection: (reason) => {
+				const crash = toError(reason, "Unhandled rejection");
+
+				this._logCrash("A failure nobody handled took the app down", reason);
+
+				// rethrowing keeps the crash, and brings it past the uncaught
+				// exception handler below, which should not log it a second time
+				this._markCrashLogged(crash);
+				throw crash;
+			},
+			exception: (exception) => {
+				this._logCrash("The app crashed", exception);
+				throw exception;
+			}
+		};
+
+		process.on('unhandledRejection', failureHandlers.rejection);
+		process.on('uncaughtException', failureHandlers.exception);
+	}
+
+	// Everything a report needs and a crash message cannot hold: what failed,
+	// where it came from and what state the app was in when it did.
+	_logCrash(heading, error) {
+		if (this._markCrashLogged(error) === false) return;
+
+		this.info(heading + ": " + describeError(error));
+		this.info(heading + ", it came from: " + describeStack(error));
+
+		try {
+			this.logState("State when the app crashed");
+		} catch (exception) {
+			this.info("The state at the crash could not be read: " + describeError(exception));
+		}
+	}
+
+	// Remembers a failure that was written to the log, and says whether it was
+	// new. A value that cannot be remembered is always treated as new: logging
+	// the same crash twice is better than logging it not at all.
+	_markCrashLogged(error) {
+		if (this._crashLogged === undefined) this._crashLogged = new Set();
+
+		// the wrapper around a failure and the failure itself are one crash
+		const value = error && error.cause !== undefined && error.cause !== null ? error.cause : error;
+
+		if (typeof value !== 'object' || value === null) return true;
+		if (this._crashLogged.has(value)) return false;
+
+		this._crashLogged.add(value);
+		return true;
 	}
 
 	// One snapshot of everything that decides what the app does next. No
@@ -310,15 +379,14 @@ class Picnic extends Homey.App {
 						this.debug("Nothing to do, the order status did not change")
 						return
 					}
-					if (orderEvent.toString() == "Error: unauthorized") {
-						this.info("Picnic rejected the auth token while polling, logging in again")
-						this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function (callBack) {
-							return Promise.reject(new Error('Re-authentication failed.'));
-						});
+					if (this._isUnauthorized(orderEvent)) {
+						// throwing rather than rejecting: the handler below is
+						// the one place that knows what to do with a failure
+						throw toError(orderEvent, "Picnic rejected the auth token while polling");
 					}
 					else if (orderEvent instanceof Error) {
 						this.debug("Order retrieving failed, connectivity issues?")
-						return Promise.reject(new Error('Status could not be retrieved.'));
+						throw toError(orderEvent, "The order status could not be retrieved");
 					}
 					else {
 						this.debug("Order_status has changed! Changing tokens, settings and firing the trigger accordingly.")
@@ -410,32 +478,75 @@ class Picnic extends Homey.App {
 						}
 					}
 				})
-					.catch(error => {
-						if (error == "Error: unauthorized") {
-							this.info("Picnic rejected the auth token while polling, logging in again")
-							this.login(this.homey.settings.get('username'), this.homey.settings.get('password'), function (callback) {
-								this.debug(callback)
-								if (callback == "success") {
-									this.debug("Auth token succesfully renewed.")
-									return Promise.resolve('Success');
-								} else {
-									this.info("Logging in again failed, the stored credentials are not accepted")
-									return Promise.reject('ERROR: Re-authentication failed. Please check your credentials.');
-								}
-							});
-						}
-						else {
-							this.debug("ERROR: " + error)
-							return Promise.reject('Error: an unexpected error occured.')
-						}
+					.catch(error => this._pollFailed(error))
+					.then(() => resolve(), error => {
+						// the handler is the last place that can say anything
+						// about a failure, so a failure in it is worth a line
+						// of its own rather than an app that goes down quietly
+						this._logCrash("Handling a polling failure went wrong itself", error);
+						resolve();
 					});
-			} else if (this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password")) {
+			} else if (this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password") > -1) {
 				this.info("No auth token stored, logging in with the stored credentials")
-				this.login(this.homey.settings.getKeys().indexOf("username"), this.homey.settings.getKeys().indexOf("password"))
+				this.login(this.homey.settings.get("username"), this.homey.settings.get("password"))
+					.then(result => {
+						this.info("Logging in with the stored credentials: " + result)
+						resolve()
+					}, error => {
+						this._logProblem("Logging in with the stored credentials", describeError(error))
+						resolve()
+					});
 			} else {
 				this.info("Not polling: no username and password stored, so nothing can be retrieved")
+				resolve()
 			}
 		});
+	}
+
+	// Everything that goes wrong while polling ends up here. Before this, any
+	// failure other than a refused token became "an unexpected error occured"
+	// on a promise nobody was waiting on, which took the app down and left a
+	// crash report saying exactly that and nothing else.
+	async _pollFailed(error) {
+		if (this._isUnauthorized(error)) {
+			this.info("Picnic rejected the auth token while polling, logging in again")
+
+			const result = await this.login(this.homey.settings.get('username'), this.homey.settings.get('password'));
+
+			if (result == "success") {
+				this._logProblem("Renewing the auth token", null);
+				this.info("Auth token succesfully renewed")
+			} else {
+				this._logProblem("Renewing the auth token", result);
+				this.logState("State after Picnic refused the stored credentials");
+			}
+			return;
+		}
+
+		const description = describeError(error);
+
+		// polling runs as often as every minute, so the full report is written
+		// when the failure starts rather than on every attempt
+		if (this._logProblem("Polling Picnic", description)) {
+			this.info("Polling Picnic failed, it came from: " + describeStack(error));
+			this.logState("State when polling failed");
+		}
+	}
+
+	// Picnic refusing the token is the one failure the poll answers by logging
+	// in again. It arrives as a string from older code paths and as an Error
+	// with a code from the request itself, and may be wrapped in the failure
+	// that carries it.
+	_isUnauthorized(error) {
+		for (let value = error, depth = 0; value !== undefined && value !== null && depth < 10; depth++) {
+			if (String(value) == "Error: unauthorized") return true;
+			if (typeof value !== 'object') return false;
+			if (value.code === utils.UNAUTHORIZED) return true;
+			if (value.statusCode === 401) return true;
+			value = value.cause;
+		}
+
+		return false;
 	}
 
 	changeInterval(interval) {
@@ -885,15 +996,17 @@ class Picnic extends Homey.App {
 					//this.debug(this.homey.settings.get("x-picnic-auth"))
 					this.debug(content)
 				}
-				this._logProblem("Retrieving the order", null);
-
-				if (typeof content == 'undefined') return reject("No content received");
+				if (typeof content == 'undefined') return reject(new Error("Picnic answered the order request with nothing at all"));
 
 				var summary;
 				try {
 					summary = JSON.parse(content);
+					// only now, an answer that cannot be read is not an answer
+					this._logProblem("Retrieving the order", null);
 				} catch (exception) {
-					return reject("Order info could not be parsed");
+					// the answer itself is the only thing that explains why it
+					// could not be read, so a report has to carry some of it
+					return reject(toError(exception, "The order info from Picnic could not be read, it answered " + describeBody(content)));
 				}
 
 				const previousStatus = this.homey.settings.get("order_status")
@@ -911,7 +1024,7 @@ class Picnic extends Homey.App {
 				return resolve(orderEvent)
 			})
 				.catch(error => {
-					this._logProblem("Retrieving the order", String(error))
+					this._logProblem("Retrieving the order", describeError(error))
 					reject(error)
 				})
 		})
