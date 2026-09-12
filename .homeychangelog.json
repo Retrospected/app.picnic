@@ -100,5 +100,8 @@
   },
   "3.6.1": {
     "en": "Fixed a bug where the authentication status in the app settings kept saying NOT OK while the login was actually fine. Adding a product to your cart no longer restarts the app when Picnic answers with something unexpected."
+  },
+  "3.6.2": {
+    "en": "The app no longer restarts when Picnic cannot be reached or answers with something the app cannot read. When something does go wrong, the app log now says what, instead of \"an unexpected error occured\"."
   }
 }
