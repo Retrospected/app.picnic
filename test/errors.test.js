@@ -58,6 +58,20 @@ test('describes a value that refers to itself rather than running out of stack',
   assert.strictEqual(describeError(loop), '{"error":"broken","self":"[circular]"}');
 });
 
+test('describes a value mentioned twice without calling the second one circular', () => {
+  const shared = { slot: "09:00" };
+
+  assert.strictEqual(describeError({ first: shared, second: shared }), '{"first":{"slot":"09:00"},"second":{"slot":"09:00"}}');
+  assert.strictEqual(describeError([shared, shared]), '[{"slot":"09:00"},{"slot":"09:00"}]');
+});
+
+test('still recognises a value nested inside itself', () => {
+  const outer = { error: "broken" };
+  outer.inner = { outer: outer };
+
+  assert.strictEqual(describeError(outer), '{"error":"broken","inner":{"outer":"[circular]"}}');
+});
+
 test('recognises an Error from another realm, which instanceof does not', () => {
   const foreign = { name: "Error", message: "unauthorized" };
 

@@ -262,10 +262,7 @@ class Picnic extends Homey.App {
 	_logUnexpectedFailures() {
 		// the handlers outlive the app object, so a restart in the same process
 		// would otherwise stack a second set on top of the first
-		if (failureHandlers !== null) {
-			process.off('unhandledRejection', failureHandlers.rejection);
-			process.off('uncaughtException', failureHandlers.exception);
-		}
+		this._removeFailureHandlers();
 
 		failureHandlers = {
 			rejection: (reason) => {
@@ -273,19 +270,37 @@ class Picnic extends Homey.App {
 
 				this._logCrash("A failure nobody handled took the app down", reason);
 
-				// rethrowing keeps the crash, and brings it past the uncaught
-				// exception handler below, which should not log it a second time
+				// the crash below should not be logged a second time
 				this._markCrashLogged(crash);
-				throw crash;
+				this._crash(crash);
 			},
 			exception: (exception) => {
 				this._logCrash("The app crashed", exception);
-				throw exception;
+				this._crash(exception);
 			}
 		};
 
 		process.on('unhandledRejection', failureHandlers.rejection);
 		process.on('uncaughtException', failureHandlers.exception);
+	}
+
+	// Let the crash happen the way it would have without any of this logging.
+	// Throwing from inside a handler is not that: Node stops before the
+	// handlers registered after this one, and exits with 7 rather than the 1
+	// an uncaught exception gives. Stepping out of the handler with ours
+	// removed leaves the failure to every other listener and, if none of them
+	// keeps the app alive, to Node's own reporting.
+	_crash(error) {
+		this._removeFailureHandlers();
+		setImmediate(() => { throw error; });
+	}
+
+	_removeFailureHandlers() {
+		if (failureHandlers === null) return;
+
+		process.off('unhandledRejection', failureHandlers.rejection);
+		process.off('uncaughtException', failureHandlers.exception);
+		failureHandlers = null;
 	}
 
 	// Everything a report needs and a crash message cannot hold: what failed,
@@ -307,7 +322,9 @@ class Picnic extends Homey.App {
 	// new. A value that cannot be remembered is always treated as new: logging
 	// the same crash twice is better than logging it not at all.
 	_markCrashLogged(error) {
-		if (this._crashLogged === undefined) this._crashLogged = new Set();
+		// weak: the app keeps running past a failure the tail handler logs, and
+		// holding on to every one of those would be a leak
+		if (this._crashLogged === undefined) this._crashLogged = new WeakSet();
 
 		// the wrapper around a failure and the failure itself are one crash
 		const value = error && error.cause !== undefined && error.cause !== null ? error.cause : error;
@@ -478,7 +495,7 @@ class Picnic extends Homey.App {
 						}
 					}
 				})
-					.catch(error => this._pollFailed(error))
+					.then(() => this._logProblem("Polling Picnic", null), error => this._pollFailed(error))
 					.then(() => resolve(), error => {
 						// the handler is the last place that can say anything
 						// about a failure, so a failure in it is worth a line
@@ -491,6 +508,7 @@ class Picnic extends Homey.App {
 				this.login(this.homey.settings.get("username"), this.homey.settings.get("password"))
 					.then(result => {
 						this.info("Logging in with the stored credentials: " + result)
+						this._logProblem("Logging in with the stored credentials", result == "success" ? null : result)
 						resolve()
 					}, error => {
 						this._logProblem("Logging in with the stored credentials", describeError(error))
