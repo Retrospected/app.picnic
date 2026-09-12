@@ -255,13 +255,10 @@ class Picnic extends Homey.App {
 		return true;
 	}
 
-	// A rejected promise nobody is waiting on takes the app down, and the crash
-	// report is then the message of whatever was rejected and nothing else.
-	// Write the failure to the log in full before that happens, and hand on a
-	// real Error so a bare string does not arrive as a crash without a stack.
+	// A rejected promise nobody awaits takes the app down with only its message
+	// as the report. Log it first, and pass on a real Error so it has a stack.
 	_logUnexpectedFailures() {
-		// the handlers outlive the app object, so a restart in the same process
-		// would otherwise stack a second set on top of the first
+		// the handlers outlive the app object, so a restart would stack a second set
 		this._removeFailureHandlers();
 
 		failureHandlers = {
@@ -284,12 +281,8 @@ class Picnic extends Homey.App {
 		process.on('uncaughtException', failureHandlers.exception);
 	}
 
-	// Let the crash happen the way it would have without any of this logging.
-	// Throwing from inside a handler is not that: Node stops before the
-	// handlers registered after this one, and exits with 7 rather than the 1
-	// an uncaught exception gives. Stepping out of the handler with ours
-	// removed leaves the failure to every other listener and, if none of them
-	// keeps the app alive, to Node's own reporting.
+	// Throwing from inside a handler skips the listeners after it and exits with
+	// 7 rather than 1, so step out of the handler with ours removed.
 	_crash(error) {
 		this._removeFailureHandlers();
 		setImmediate(() => { throw error; });
@@ -303,8 +296,7 @@ class Picnic extends Homey.App {
 		failureHandlers = null;
 	}
 
-	// Everything a report needs and a crash message cannot hold: what failed,
-	// where it came from and what state the app was in when it did.
+	// what a crash message cannot hold: where it came from and the state it left
 	_logCrash(heading, error) {
 		if (this._markCrashLogged(error) === false) return;
 
@@ -318,12 +310,10 @@ class Picnic extends Homey.App {
 		}
 	}
 
-	// Remembers a failure that was written to the log, and says whether it was
-	// new. A value that cannot be remembered is always treated as new: logging
-	// the same crash twice is better than logging it not at all.
+	// Whether this failure is new. One that cannot be remembered counts as new:
+	// logging a crash twice beats not logging it at all.
 	_markCrashLogged(error) {
-		// weak: the app keeps running past a failure the tail handler logs, and
-		// holding on to every one of those would be a leak
+		// weak: the app runs on past the failures logged here, keeping them all leaks
 		if (this._crashLogged === undefined) this._crashLogged = new WeakSet();
 
 		// the wrapper around a failure and the failure itself are one crash
@@ -397,8 +387,6 @@ class Picnic extends Homey.App {
 						return
 					}
 					if (this._isUnauthorized(orderEvent)) {
-						// throwing rather than rejecting: the handler below is
-						// the one place that knows what to do with a failure
 						throw toError(orderEvent, "Picnic rejected the auth token while polling");
 					}
 					else if (orderEvent instanceof Error) {
@@ -497,9 +485,8 @@ class Picnic extends Homey.App {
 				})
 					.then(() => this._logProblem("Polling Picnic", null), error => this._pollFailed(error))
 					.then(() => resolve(), error => {
-						// the handler is the last place that can say anything
-						// about a failure, so a failure in it is worth a line
-						// of its own rather than an app that goes down quietly
+						// nothing else is left to report a
+						// failure in the failure handler
 						this._logCrash("Handling a polling failure went wrong itself", error);
 						resolve();
 					});
@@ -521,10 +508,8 @@ class Picnic extends Homey.App {
 		});
 	}
 
-	// Everything that goes wrong while polling ends up here. Before this, any
-	// failure other than a refused token became "an unexpected error occured"
-	// on a promise nobody was waiting on, which took the app down and left a
-	// crash report saying exactly that and nothing else.
+	// Everything that goes wrong while polling ends up here. It used to become
+	// "an unexpected error occured" on a promise nobody awaited, and crash.
 	async _pollFailed(error) {
 		if (this._isUnauthorized(error)) {
 			this.info("Picnic rejected the auth token while polling, logging in again")
@@ -543,18 +528,15 @@ class Picnic extends Homey.App {
 
 		const description = describeError(error);
 
-		// polling runs as often as every minute, so the full report is written
-		// when the failure starts rather than on every attempt
+		// polling can run every minute: report in full when the failure starts
 		if (this._logProblem("Polling Picnic", description)) {
 			this.info("Polling Picnic failed, it came from: " + describeStack(error));
 			this.logState("State when polling failed");
 		}
 	}
 
-	// Picnic refusing the token is the one failure the poll answers by logging
-	// in again. It arrives as a string from older code paths and as an Error
-	// with a code from the request itself, and may be wrapped in the failure
-	// that carries it.
+	// The one failure the poll answers by logging in again. It arrives as a
+	// string, or as an Error with a code, either possibly wrapped.
 	_isUnauthorized(error) {
 		for (let value = error, depth = 0; value !== undefined && value !== null && depth < 10; depth++) {
 			if (String(value) == "Error: unauthorized") return true;
@@ -1022,8 +1004,7 @@ class Picnic extends Homey.App {
 					// only now, an answer that cannot be read is not an answer
 					this._logProblem("Retrieving the order", null);
 				} catch (exception) {
-					// the answer itself is the only thing that explains why it
-					// could not be read, so a report has to carry some of it
+					// the answer is the only thing that explains why it could not be read
 					return reject(toError(exception, "The order info from Picnic could not be read, it answered " + describeBody(content)));
 				}
 
