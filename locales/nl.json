@@ -16,8 +16,8 @@
             "resend-button": "Code opnieuw sturen",
             "code-sent": "Er is een nieuwe SMS-code verzonden.",
             "verify-failed": "Picnic heeft die code niet geaccepteerd. Codes verlopen na een paar minuten, dus sla je inloggegevens opnieuw op om een nieuwe te laten sturen.",
-            "signin-needed": "Picnic vraagt om een SMS-code. De app vraagt die niet uit zichzelf aan, dus sla hieronder je inloggegevens op om een code te laten sturen.",
-            "resend-failed": "Picnic wilde geen nieuwe code sturen. De aanmelding waar die bij hoorde is verlopen, dus sla je inloggegevens opnieuw op om opnieuw te beginnen.",
+            "signin-needed": "Picnic vraagt om een SMS-code. Login via met behulp van je inloggegevens en vul vervolgens de ontvangen code in.",
+            "resend-failed": "Picnic wilde geen nieuwe code sturen. De aanmelding waar die bij hoorde is verlopen, dus log in met je inloggegevens om opnieuw te beginnen.",
             "startover-button": "Opnieuw beginnen"
         }
     },
