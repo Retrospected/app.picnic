@@ -3,7 +3,7 @@
 All notable changes to the Picnic app for Homey, newest first. The short version of
 each release is what Homey shows in the app store, and lives in `.homeychangelog.json`.
 
-## Unreleased
+## 3.7.0
 
 - The app never asks Picnic for an SMS code by itself any more. A login that needs two-factor authentication leaves the app without a token until the code is entered, and the next poll saw that missing token, logged in again and had another code sent: every hour for as long as an order was open, and every minute during a delivery window. A code is now only ever sent because you saved your login on the app's settings page, which is the one moment you are waiting for one
 - Homey notifies you when Picnic wants a code, once, instead of the app waiting in silence until someone happens to open its settings. Until you sign in there the app cannot follow your order, and it says so rather than sending text messages about it
