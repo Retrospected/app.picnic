@@ -53,6 +53,7 @@
             </div>
             <button id="verify-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.verify-button"></var></button>
             <button id="resend-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.resend-button"></var></button>
+            <button id="cancel-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.startover-button"></var></button>
           </div>
           <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"></button>
           <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"></button>
@@ -180,6 +181,7 @@
           var otpElement = document.getElementById('otp');
           var verify2faElement = document.getElementById('verify-2fa');
           var resend2faElement = document.getElementById('resend-2fa');
+          var cancel2faElement = document.getElementById('cancel-2fa');
 
           Homey.api('GET', '/status', null, function ( err, result ) {
             if ( err ) return Homey.alert( err );
@@ -264,6 +266,9 @@
             }
             Homey.api('POST', '/verify2fa', { 'otp': otp }, function( err, result ) {
               if( err ) return Homey.alert(err);
+              if (result === 'invalid_code') {
+                return Homey.alert(Homey.__('settings.2fa.verify-failed'));
+              }
               if (result !== 'success') {
                 return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
               }
@@ -275,9 +280,18 @@
             Homey.api('POST', '/generate2fa', { 'channel': 'SMS' }, function( err, result ) {
               if( err ) return Homey.alert(err);
               if (result !== 'success') {
-                return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
+                // the sign-in the code belongs to is gone, and saving the
+                // login is the only thing that starts a new one
+                return Homey.alert(Homey.__('settings.2fa.resend-failed'));
               }
               Homey.alert(Homey.__('settings.2fa.code-sent'));
+            });
+          });
+
+          cancel2faElement.addEventListener('click', function(e) {
+            Homey.api('POST', '/cancel2fa', null, function( err, result ) {
+              if( err ) return Homey.alert(err);
+              window.location.reload();
             });
           });
         }

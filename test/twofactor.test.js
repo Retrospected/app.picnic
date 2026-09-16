@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { verificationPending, awaitingVerification } = require('../lib/twofactor.js');
+const { verificationPending, awaitingVerification, codeIsUsable, CODE_VALIDITY } = require('../lib/twofactor.js');
 
 const NOW = 1758000000000;
 
@@ -55,4 +55,31 @@ test('a code stays worth waiting for however old it is', () => {
   // only the user can replace it, by signing in again: giving up on the wait
   // here is what would have the app ask Picnic for another SMS
   assert.strictEqual(awaitingVerification(pending({ codeRequestedAt: 1 })), true);
+});
+
+test('a code that was just sent is worth typing in', () => {
+  assert.strictEqual(codeIsUsable(pending(), NOW), true);
+});
+
+test('a code stops being worth typing in once it has expired', () => {
+  assert.strictEqual(codeIsUsable(pending({ codeRequestedAt: NOW - CODE_VALIDITY + 1 }), NOW), true);
+  assert.strictEqual(codeIsUsable(pending({ codeRequestedAt: NOW - CODE_VALIDITY }), NOW), false);
+});
+
+// the phone was in another room and the code died of old age: what is left to
+// do about that is a new sign-in, not a field to type the old code into
+test('an expired code is still waited on, it is just not offered any more', () => {
+  const expired = pending({ codeRequestedAt: NOW - CODE_VALIDITY - 1 });
+
+  assert.strictEqual(awaitingVerification(expired), true);
+  assert.strictEqual(codeIsUsable(expired, NOW), false);
+});
+
+test('a code that was never sent is never worth typing in', () => {
+  assert.strictEqual(codeIsUsable(pending({ codeRequestedAt: undefined }), NOW), false);
+  assert.strictEqual(codeIsUsable({}, NOW), false);
+});
+
+test('a clock that moved backwards does not expire a fresh code', () => {
+  assert.strictEqual(codeIsUsable(pending({ codeRequestedAt: NOW + CODE_VALIDITY }), NOW), true);
 });

@@ -71,6 +71,10 @@
       "method": "POST",
       "path": "/verify2fa"
     },
+    "cancel2FA": {
+      "method": "POST",
+      "path": "/cancel2fa"
+    },
     "status": {
       "method": "GET",
       "path": "/status"

@@ -1020,8 +1020,10 @@ class Picnic extends Homey.App {
 						this.pollOrder();
 						resolve("success");
 					} else {
+						// a code the settings page puts in words, rather than the
+						// words themselves: only that page knows the language
 						this.info("Picnic rejected the 2FA code (HTTP " + res.statusCode + ")")
-						resolve("Invalid 2FA code. Please try again.");
+						resolve("invalid_code");
 					}
 				});
 			});
@@ -1034,6 +1036,19 @@ class Picnic extends Homey.App {
 			req.write(json_data);
 			req.end();
 		});
+	}
+
+	// The way out of a login that cannot be finished: a code that never arrived,
+	// one that expired while the phone was in another room. Nothing is sent
+	// here, and no notification either, since whoever pressed this is looking
+	// at the page that tells them what to do next.
+	async cancelPendingVerification() {
+		this._clearPendingVerification();
+		this.homey.settings.set("2fa_signin_required", true);
+
+		this.info("The waiting 2FA code was given up on from the settings page, so a sign-in is needed to have a new one sent")
+
+		return "OK";
 	}
 
 	async getOrderStatusFromSettings() {
@@ -1053,9 +1068,18 @@ class Picnic extends Homey.App {
 	async getStatus() {
 		this.logState("State when the settings page was opened")
 
-		if (this.homey.settings.get("2fa_pending") === true || this.homey.settings.get("x-picnic-auth-pending")) {
-			this.info("Authentication check: a 2FA code is still waiting to be verified")
-			return "2FA PENDING";
+		const twoFactor = this._twoFactorState();
+
+		if (twofactor.verificationPending(twoFactor)) {
+			if (twofactor.codeIsUsable(twoFactor, Date.now())) {
+				this.info("Authentication check: a 2FA code is still waiting to be verified")
+				return "2FA PENDING";
+			}
+
+			// Saying a code is waiting sends someone looking for a text message
+			// that Picnic will refuse by the time they find it.
+			this.info("Authentication check: the 2FA code this login was waiting for is too old to still work, so a sign-in is needed to have a new one sent")
+			return "SIGN IN NEEDED";
 		}
 
 		// Picnic accepted the credentials and then asked for a second factor,
