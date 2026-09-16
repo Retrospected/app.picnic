@@ -3,6 +3,13 @@
 All notable changes to the Picnic app for Homey, newest first. The short version of
 each release is what Homey shows in the app store, and lives in `.homeychangelog.json`.
 
+## Unreleased
+
+- The app no longer has Picnic send an SMS code every hour. A login that needs two-factor authentication leaves the app without a token until the code is entered, and the next poll saw that missing token and logged in again, which had another code sent: every hour for as long as an order was open, and every minute during a delivery window. The app now waits for the code it already had sent
+- The code in the newest SMS is now the one that works. Each of those logins replaced the session the previous code belonged to, so a code that arrived a minute earlier was already refused by the time it was typed in
+- Homey notifies you when Picnic asks for an SMS code, instead of the app waiting for it in silence until someone happens to open its settings
+- The settings page offers the field to enter the code whenever one is waiting, rather than only directly after a login was attempted on that page
+
 ## 3.6.2
 
 - A failing poll no longer crashes the app with "an unexpected error occured" as the entire report. Whatever went wrong is written to the app log first, with the failure itself, its network or HTTP status code, where in the app it came from and the state the app was in, and the poll keeps running instead of taking the app down

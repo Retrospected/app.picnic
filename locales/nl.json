@@ -28,5 +28,8 @@
             "startwindow": "Start van het bezorgvenster",
             "endwindow": "Einde van het bezorgvenster"
         }
+    },
+    "notifications": {
+        "2fa-pending": "Picnic heeft een SMS-code gestuurd. Vul die in bij Picnic in de app-instellingen: tot die tijd kan de app je bestelling niet bijhouden."
     }
 }

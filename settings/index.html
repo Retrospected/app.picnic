@@ -189,6 +189,12 @@
               // 2FA still pending, or the check could not reach Picnic: not a
               // reason to point at the credentials
               statusElement.style.color = "orange";
+
+              // the app is waiting for a code it cannot ask for again, so put
+              // the field to type it in on screen without a login first
+              if (result == "2FA PENDING") {
+                twofaSection.style.display = 'block';
+              }
             }
             statusElement.innerHTML = result;
           });

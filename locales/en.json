@@ -28,5 +28,8 @@
             "startwindow": "Start of the delivery window",
             "endwindow": "End of the delivery window"
         }
+    },
+    "notifications": {
+        "2fa-pending": "Picnic sent an SMS code. Enter it under Picnic in the app settings: until then the app cannot check your order."
     }
 }
