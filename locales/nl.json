@@ -10,6 +10,7 @@
         "order-status-button": "bestelling status",
         "save-button": "Wijzigingen opslaan",
         "2fa": {
+            "heading": "Tweestapsverificatie",
             "info": "Tweestapsverificatie is vereist. Er is een SMS-code verzonden naar het telefoonnummer van je Picnic-account. Codes verlopen na een paar minuten.",
             "code-label": "SMS-code",
             "verify-button": "Verifieer",

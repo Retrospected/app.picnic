@@ -14,6 +14,21 @@
   <div class="form-group">
     <h2><var style="font-style:normal;" data-i18n="settings.settings"/></h2>
     <div>
+      <div class="panel panel-default" id="twofa-panel" style="display:none;">
+        <div class="panel-heading" data-i18n="settings.2fa.heading"></div>
+        <div class="panel-body">
+          <p id="signin-notice" style="display:none;" data-i18n="settings.2fa.signin-needed"></p>
+          <div id="twofa-section" style="display:none;">
+            <p data-i18n="settings.2fa.info"></p>
+            <div class="form-group">
+              <label for="otp" data-i18n="settings.2fa.code-label"></label>
+              <input class="form-control" id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="" />
+            </div>
+            <button id="verify-2fa" class="btn btn-default" type="button" data-i18n="settings.2fa.verify-button"></button>
+            <button id="cancel-2fa" class="btn btn-default" type="button" data-i18n="settings.2fa.startover-button"></button>
+          </div>
+        </div>
+      </div>
       <div class="panel panel-default">
         <div class="panel-heading">Account</div>
         <div class="panel-body">
@@ -42,18 +57,6 @@
               <div><var id="order-status">loading...</var></div>
             </div>
           </form>
-          <div id="signin-notice" style="display:none; margin-top:15px; padding:10px; border:1px solid #ccc; border-radius:4px;">
-            <p data-i18n="settings.2fa.signin-needed"></p>
-          </div>
-          <div id="twofa-section" style="display:none; margin-top:15px; padding:10px; border:1px solid #ccc; border-radius:4px;">
-            <p data-i18n="settings.2fa.info"></p>
-            <div class="form-group">
-              <label for="otp" data-i18n="settings.2fa.code-label"></label>
-              <input class="form-control" id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="" />
-            </div>
-            <button id="verify-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.verify-button"></var></button>
-            <button id="cancel-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.startover-button"></var></button>
-          </div>
           <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"></button>
           <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"></button>
         </div>
@@ -175,8 +178,18 @@
           var statusElement = document.getElementById('status');
           var orderStatusElement = document.getElementById('order-status');
           var resetOrderStatusElement = document.getElementById('reset-order-status');
+          var twofaPanel = document.getElementById('twofa-panel');
           var twofaSection = document.getElementById('twofa-section');
           var signinNoticeElement = document.getElementById('signin-notice');
+
+          // The panel is only on screen while it has something to say, and says
+          // one of its two things at a time: a code to type in, or the login to
+          // do because there is no code worth typing in.
+          function showTwoFactor(part) {
+            twofaSection.style.display = part === twofaSection ? 'block' : 'none';
+            signinNoticeElement.style.display = part === signinNoticeElement ? 'block' : 'none';
+            twofaPanel.style.display = 'block';
+          }
           var otpElement = document.getElementById('otp');
           var verify2faElement = document.getElementById('verify-2fa');
           var cancel2faElement = document.getElementById('cancel-2fa');
@@ -197,13 +210,13 @@
               // a code was sent and is waiting to be typed in, so put the field
               // for it on screen rather than behind a login first
               if (result == "2FA PENDING") {
-                twofaSection.style.display = 'block';
+                showTwoFactor(twofaSection);
               }
 
-              // no code has been sent: only saving the login asks for one, so
-              // say that instead of showing a field with nothing to put in it
+              // no code has been sent: only logging in asks for one, so say
+              // that instead of showing a field with nothing to put in it
               if (result == "SIGN IN NEEDED") {
-                signinNoticeElement.style.display = 'block';
+                showTwoFactor(signinNoticeElement);
               }
             }
             statusElement.innerHTML = result;
@@ -240,9 +253,8 @@
               Homey.set('password', passwordElement.value)
 
               if (result === '2fa_required') {
-                // the sign-in this asked for has happened, and a code is on its way
-                signinNoticeElement.style.display = 'none';
-                twofaSection.style.display = 'block';
+                // the login the notice asked for has happened, and a code is on its way
+                showTwoFactor(twofaSection);
                 otpElement.value = '';
                 otpElement.focus();
                 return;

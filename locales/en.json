@@ -10,6 +10,7 @@
         "order-status-button": "order status",
         "save-button": "Save changes",
         "2fa": {
+            "heading": "Two-factor authentication",
             "info": "Two-factor authentication is required. An SMS code has been sent to the phone number registered with your Picnic account. Codes expire after a few minutes.",
             "code-label": "SMS code",
             "verify-button": "Verify",
