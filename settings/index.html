@@ -29,7 +29,7 @@
           </div>
         </div>
       </div>
-      <div class="panel panel-default">
+      <div class="panel panel-default" id="account-panel">
         <div class="panel-heading">Account</div>
         <div class="panel-body">
           <form role="form">
@@ -178,6 +178,7 @@
           var statusElement = document.getElementById('status');
           var orderStatusElement = document.getElementById('order-status');
           var resetOrderStatusElement = document.getElementById('reset-order-status');
+          var accountPanel = document.getElementById('account-panel');
           var twofaPanel = document.getElementById('twofa-panel');
           var twofaSection = document.getElementById('twofa-section');
           var signinNoticeElement = document.getElementById('signin-notice');
@@ -185,10 +186,15 @@
           // The panel is only on screen while it has something to say, and says
           // one of its two things at a time: a code to type in, or the login to
           // do because there is no code worth typing in.
+          //
+          // A code to type in is the whole task, so the account panel goes away
+          // and comes back when the code is verified or given up on. The login
+          // to do is the opposite: that panel IS the way out, so it stays.
           function showTwoFactor(part) {
             twofaSection.style.display = part === twofaSection ? 'block' : 'none';
             signinNoticeElement.style.display = part === signinNoticeElement ? 'block' : 'none';
             twofaPanel.style.display = 'block';
+            accountPanel.style.display = part === twofaSection ? 'none' : 'block';
           }
           var otpElement = document.getElementById('otp');
           var verify2faElement = document.getElementById('verify-2fa');
