@@ -925,6 +925,8 @@ class Picnic extends Homey.App {
 		});
 	}
 
+	// The only thing in the app that has Picnic send a text message, and the
+	// login someone started on the settings page is the only thing that calls it.
 	async generate2FACode(channel) {
 		var json_data = JSON.stringify({ channel: channel || "SMS" });
 		var options = {

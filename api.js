@@ -7,17 +7,6 @@ module.exports = {
     return await homey.app.login(body.username, body.password, { requestedByUser: true });
   },
 
-  async generate2FA({ homey, body }) {
-    try {
-      return await homey.app.generate2FACode(body && body.channel ? body.channel : "SMS");
-    } catch (e) {
-      // the status code Picnic refused with is in the app log: the page only
-      // needs to know that this way out is closed and which one is left
-      homey.app.info("Sending another 2FA code failed: " + ((e && e.message) || "no reason given"));
-      return "resend_failed";
-    }
-  },
-
   async cancel2FA({ homey }) {
     return await homey.app.cancelPendingVerification();
   },

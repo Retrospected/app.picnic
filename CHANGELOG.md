@@ -10,7 +10,8 @@ each release is what Homey shows in the app store, and lives in `.homeychangelog
 - The settings page says a sign-in is needed when that is what Picnic is waiting for, and offers the field to enter a code whenever one has actually been sent, rather than only directly after a login was attempted on that page
 - A code that has expired is no longer offered as though it would work. The settings page stops showing the field to type one in five minutes after it was sent, and asks for a sign-in instead, which is what has a new code sent
 - A sign-in you cannot finish, because the phone is in another room or the code expired while you looked for it, has a way out: "Start over" on the settings page drops the half finished sign-in and puts you back to saving your login when you are ready
-- A code Picnic rejects now says codes expire and what to do about it, instead of "Verification failed. Please try again." pointing you back at the code that just failed. The same for a resend Picnic refuses, which means the sign-in behind it has lapsed and only a new one will do
+- A code Picnic rejects now says codes expire and what to do about it, instead of "Verification failed. Please try again." pointing you back at the code that just failed
+- The "Resend code" button is gone. Logging in again is what sends a code, and one button for it is clearer than two
 - The code in the newest SMS is now the one that works. Each of those repeated logins replaced the session the previous code belonged to, so a code that arrived a minute earlier was already being refused by the time it was typed in
 
 ## 3.6.2

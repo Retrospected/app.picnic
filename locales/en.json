@@ -13,11 +13,8 @@
             "info": "Two-factor authentication is required. An SMS code has been sent to the phone number registered with your Picnic account. Codes expire after a few minutes.",
             "code-label": "SMS code",
             "verify-button": "Verify",
-            "resend-button": "Resend code",
-            "code-sent": "A new SMS code has been sent.",
             "verify-failed": "Picnic did not accept that code. Codes expire after a few minutes, so login again to have a new one sent.",
             "signin-needed": "Picnic asked for an SMS code. The app does not request one by itself, so login again to have a code sent.",
-            "resend-failed": "Picnic would not send another code. The sign-in it belonged to has expired, so login again to start over.",
             "startover-button": "Start over"
         }
     },
