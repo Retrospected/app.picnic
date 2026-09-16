@@ -14,7 +14,7 @@
             "code-label": "SMS-code",
             "verify-button": "Verifieer",
             "verify-failed": "Picnic heeft die code niet geaccepteerd. Codes verlopen na een paar minuten, dus sla je inloggegevens opnieuw op om een nieuwe te laten sturen.",
-            "signin-needed": "Picnic vraagt om een SMS-code. Login via met behulp van je inloggegevens en vul vervolgens de ontvangen code in.",
+            "signin-needed": "Picnic vraagt om een SMS-code. Log in met je inloggegevens en vul vervolgens de ontvangen code in.",
             "startover-button": "Opnieuw beginnen"
         }
     },
