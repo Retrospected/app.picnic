@@ -30,6 +30,6 @@
         }
     },
     "notifications": {
-        "2fa-signin": "Picnic vraagt om een SMS-code voordat de app er weer in mag. Open de instellingen van de Picnic-app en sla je inloggegevens op om er een te laten sturen."
+        "2fa-signin": "Picnic vraagt om een SMS-code voordat de app er weer in mag. Open de instellingen van de Picnic-app en log opnieuw in om er een te laten sturen."
     }
 }
