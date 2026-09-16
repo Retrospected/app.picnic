@@ -5,10 +5,10 @@ each release is what Homey shows in the app store, and lives in `.homeychangelog
 
 ## Unreleased
 
-- The app no longer has Picnic send an SMS code every hour. A login that needs two-factor authentication leaves the app without a token until the code is entered, and the next poll saw that missing token and logged in again, which had another code sent: every hour for as long as an order was open, and every minute during a delivery window. The app now waits for the code it already had sent
-- The code in the newest SMS is now the one that works. Each of those logins replaced the session the previous code belonged to, so a code that arrived a minute earlier was already refused by the time it was typed in
-- Homey notifies you when Picnic asks for an SMS code, instead of the app waiting for it in silence until someone happens to open its settings
-- The settings page offers the field to enter the code whenever one is waiting, rather than only directly after a login was attempted on that page
+- The app never asks Picnic for an SMS code by itself any more. A login that needs two-factor authentication leaves the app without a token until the code is entered, and the next poll saw that missing token, logged in again and had another code sent: every hour for as long as an order was open, and every minute during a delivery window. A code is now only ever sent because you saved your login on the app's settings page, which is the one moment you are waiting for one
+- Homey notifies you when Picnic wants a code, once, instead of the app waiting in silence until someone happens to open its settings. Until you sign in there the app cannot follow your order, and it says so rather than sending text messages about it
+- The settings page says a sign-in is needed when that is what Picnic is waiting for, and offers the field to enter a code whenever one has actually been sent, rather than only directly after a login was attempted on that page
+- The code in the newest SMS is now the one that works. Each of those repeated logins replaced the session the previous code belonged to, so a code that arrived a minute earlier was already being refused by the time it was typed in
 
 ## 3.6.2
 

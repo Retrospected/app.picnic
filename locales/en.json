@@ -15,7 +15,8 @@
             "verify-button": "Verify",
             "resend-button": "Resend code",
             "code-sent": "A new SMS code has been sent.",
-            "verify-failed": "Verification failed. Please try again."
+            "verify-failed": "Verification failed. Please try again.",
+            "signin-needed": "Picnic asked for an SMS code. The app does not request one by itself, so save your login below to have a code sent."
         }
     },
     "tokens": {
@@ -30,6 +31,6 @@
         }
     },
     "notifications": {
-        "2fa-pending": "Picnic sent an SMS code. Enter it under Picnic in the app settings: until then the app cannot check your order."
+        "2fa-signin": "Picnic wants an SMS code before it will let the app in again. Open the Picnic app settings and save your login to have one sent."
     }
 }

@@ -342,7 +342,9 @@ class Picnic extends Homey.App {
 			+ ", password " + (stored("password") ? "stored" : "missing")
 			+ ", auth token " + (stored("x-picnic-auth") ? "stored" : "missing")
 			+ (stored("x-picnic-auth-pending") || this.homey.settings.get("2fa_pending") === true
-				? ", a 2FA code is still waiting to be verified" : ""));
+				? ", a 2FA code is still waiting to be verified" : "")
+			+ (this.homey.settings.get("2fa_signin_required") === true
+				? ", and Picnic wants a 2FA code that only a sign-in asks for" : ""));
 
 		this.info(reason + ": order status " + or("order_status", "unknown")
 			+ ", delivery window " + or("delivery_eta_start", "unknown") + " until " + or("delivery_eta_end", "unknown"));
@@ -491,15 +493,11 @@ class Picnic extends Homey.App {
 						this._logCrash("Handling a polling failure went wrong itself", error);
 						resolve();
 					});
-			} else if (twofactor.awaitingVerification(this._twoFactorState())) {
-				// Logging in again would have Picnic send another SMS, and the
-				// app still could not finish the login: only the person holding
-				// the phone can. Polling every hour meant a text message every
-				// hour, so wait for the code instead, and say so once.
-				if (this._pendingVerificationLogged !== true) {
-					this._pendingVerificationLogged = true;
-					this.info("Not polling: a 2FA code is still waiting to be verified on the settings page")
-				}
+			} else if (this._waitingOnTheUser() !== null) {
+				// Logging in again cannot get past a second factor: only the
+				// person holding the phone can. It used to be tried every hour,
+				// and every hour Picnic sent them another text message.
+				this._reportWaitingOnTheUser()
 				resolve()
 			} else if (this.homey.settings.getKeys().indexOf("username") > -1 && this.homey.settings.getKeys().indexOf("password") > -1) {
 				this.info("No auth token stored, logging in with the stored credentials")
@@ -523,8 +521,10 @@ class Picnic extends Homey.App {
 	// "an unexpected error occured" on a promise nobody awaited, and crash.
 	async _pollFailed(error) {
 		if (this._isUnauthorized(error)) {
-			if (twofactor.awaitingVerification(this._twoFactorState())) {
-				this.info("Picnic rejected the auth token while polling, but a 2FA code is still waiting to be verified, so logging in again would only send another SMS")
+			const waiting = this._waitingOnTheUser();
+
+			if (waiting !== null) {
+				this.info("Picnic rejected the auth token while polling, but " + waiting)
 				return;
 			}
 
@@ -740,6 +740,33 @@ class Picnic extends Homey.App {
 		}
 	}
 
+	// Why the app cannot get itself a session, when the reason is the user
+	// rather than anything it could do about it. Both reasons end at the
+	// settings page: one has a code waiting to be typed in, the other needs the
+	// sign-in that has Picnic send a code in the first place.
+	_waitingOnTheUser() {
+		if (twofactor.awaitingVerification(this._twoFactorState())) {
+			return "a 2FA code is still waiting to be verified on the settings page";
+		}
+
+		if (this.homey.settings.get("2fa_signin_required") === true) {
+			return "Picnic wants a 2FA code, which only a sign-in on the settings page asks for";
+		}
+
+		return null;
+	}
+
+	// The poll runs as often as every minute and this state lasts until someone
+	// acts on it, so say it when it starts rather than on every attempt.
+	_reportWaitingOnTheUser() {
+		const reason = this._waitingOnTheUser();
+
+		if (reason === null || reason === this._waitingLogged) return;
+
+		this._waitingLogged = reason;
+		this.info("Not polling: " + reason)
+	}
+
 	// The 2FA state the decisions in lib/twofactor.js are made on.
 	_twoFactorState() {
 		return {
@@ -749,24 +776,49 @@ class Picnic extends Homey.App {
 		};
 	}
 
-	// Nothing is left to verify, so the app can log in on its own again.
+	// Nothing about the second factor is outstanding any more, so the app is
+	// free to log in on its own again.
 	_clearPendingVerification() {
 		this.homey.settings.unset("x-picnic-auth-pending");
 		this.homey.settings.unset("2fa_code_requested_at");
+		this.homey.settings.unset("2fa_signin_required");
 		this.homey.settings.set("2fa_pending", false);
-		this._pendingVerificationLogged = false;
+		this._waitingLogged = null;
 	}
 
-	// The app cannot finish a login that needs a code, and nothing tells the
-	// user that unless they happen to open the settings page. Say it where they
-	// will see it, and only when a code was actually sent.
-	async _askToVerifyTheCode() {
+	// Picnic will only hand out a session once a code it sent over SMS is
+	// verified, and the app does not ask for that code: doing so on its own
+	// initiative is a text message the user never asked for, and the hourly
+	// poll made it an hourly text message. So the login stops here and waits
+	// for a sign-in on the settings page, which is the one place someone is
+	// holding the phone the code goes to.
+	async _signInRequired() {
+		const alreadyKnown = this.homey.settings.get("2fa_signin_required") === true;
+
+		this.homey.settings.unset("x-picnic-auth");
+		this._clearPendingVerification();
+		this.homey.settings.set("2fa_signin_required", true);
+
+		this.info("Picnic wants a 2FA code, which the app does not request by itself: waiting for a sign-in on the settings page")
+
+		// The poll stops at this state, so it will not come back through here:
+		// this is the one chance to say so, and saying it twice would take a
+		// second login that only the user can start anyway.
+		if (alreadyKnown) return;
+
+		await this._notify("notifications.2fa-signin", "the sign-in Picnic wants");
+	}
+
+	// Waiting on the user is only useful if the user is told. Nothing else
+	// does: the app log and the settings page are both places someone has to
+	// think to look.
+	async _notify(key, subject) {
 		try {
 			await this.homey.notifications.createNotification({
-				excerpt: this.homey.__("notifications.2fa-pending")
+				excerpt: this.homey.__(key)
 			});
 		} catch (exception) {
-			this.info("The notification about the waiting 2FA code could not be created: " + describeError(exception))
+			this.info("The notification about " + subject + " could not be created: " + describeError(exception))
 		}
 	}
 
@@ -826,29 +878,27 @@ class Picnic extends Homey.App {
 						this.homey.settings.set("password", password)
 
 						if (responseData.second_factor_authentication_required === true) {
-							const sendCode = requestedByUser || twofactor.shouldRequestCode(this._twoFactorState(), Date.now());
-
-							this.homey.settings.set("2fa_pending", true)
-							this.homey.settings.unset("x-picnic-auth")
-
-							// A code is verified against the token the login it
-							// came from handed out, so keep both or neither:
-							// storing this token while leaving the previous code
-							// with the user makes that code fail to verify.
-							if (sendCode === false) {
-								this.info("Login needs a 2FA code, but the one Picnic already sent is still waiting to be verified")
-								resolve("2fa_required")
+							// an SMS is only ever worth sending to someone who
+							// is waiting for it, so a login the app made on its
+							// own stops short of asking for a code
+							if (requestedByUser === false) {
+								this._signInRequired().then(() => resolve("2fa_signin_required"));
 								return
 							}
 
 							this.info("Login needs a 2FA code, requesting one over SMS")
+
+							// A code is verified against the token the login it
+							// came from handed out, so the two are stored
+							// together: keeping a token from an earlier login
+							// would make the code that arrives now fail.
+							this._clearPendingVerification()
+							this.homey.settings.set("2fa_pending", true)
+							this.homey.settings.unset("x-picnic-auth")
 							this.homey.settings.set("x-picnic-auth-pending", res.headers['x-picnic-auth'])
+
 							this.generate2FACode("SMS")
-								// a code that could not be sent is logged where
-								// that happens, and leaves nothing to wait for:
-								// the next poll is free to try the login again
-								.then(() => this._askToVerifyTheCode(), () => undefined)
-								.then(() => resolve("2fa_required"));
+								.then(() => resolve("2fa_required"), () => resolve("2fa_required"));
 						} else {
 							this._clearPendingVerification()
 							this.homey.settings.set("x-picnic-auth", res.headers['x-picnic-auth'])
@@ -1006,6 +1056,14 @@ class Picnic extends Homey.App {
 		if (this.homey.settings.get("2fa_pending") === true || this.homey.settings.get("x-picnic-auth-pending")) {
 			this.info("Authentication check: a 2FA code is still waiting to be verified")
 			return "2FA PENDING";
+		}
+
+		// Picnic accepted the credentials and then asked for a second factor,
+		// so this is not a credential problem: it is a code nobody has yet,
+		// and saving the login here is what has Picnic send one.
+		if (this.homey.settings.get("2fa_signin_required") === true) {
+			this.info("Authentication check: Picnic wants a 2FA code, so a sign-in is needed to have one sent")
+			return "SIGN IN NEEDED";
 		}
 
 		const token = this.homey.settings.get("x-picnic-auth");

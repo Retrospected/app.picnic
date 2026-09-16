@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { verificationPending, awaitingVerification, shouldRequestCode, CODE_COOLDOWN } = require('../lib/twofactor.js');
+const { verificationPending, awaitingVerification } = require('../lib/twofactor.js');
 
 const NOW = 1758000000000;
 
@@ -36,10 +36,11 @@ test('a code that was sent and can still be verified is worth waiting for', () =
 
 test('nothing is awaited when no 2FA is going on at all', () => {
   assert.strictEqual(awaitingVerification({}), false);
+  assert.strictEqual(awaitingVerification(undefined), false);
 });
 
-// the login stored the pending state and the request for a code then failed,
-// which used to leave the app waiting for a text message nobody ever got
+// the sign-in stored the pending state and the request for a code then failed,
+// which would otherwise leave the app waiting on a text message nobody got
 test('a code that was never sent is not worth waiting for', () => {
   assert.strictEqual(awaitingVerification(pending({ codeRequestedAt: undefined })), false);
   assert.strictEqual(awaitingVerification(pending({ codeRequestedAt: "not a moment" })), false);
@@ -50,29 +51,8 @@ test('a code without the token it verifies against is not worth waiting for', ()
   assert.strictEqual(awaitingVerification({ pendingFlag: true, codeRequestedAt: NOW - 1000 }), false);
 });
 
-test('a login that needs a second factor asks for a code when none is waiting', () => {
-  assert.strictEqual(shouldRequestCode({}, NOW), true);
-});
-
-test('a code sent a moment ago is not worth another SMS', () => {
-  assert.strictEqual(shouldRequestCode(pending(), NOW), false);
-});
-
-test('a code stops counting once the cooldown has passed', () => {
-  assert.strictEqual(shouldRequestCode(pending({ codeRequestedAt: NOW - CODE_COOLDOWN + 1 }), NOW), false);
-  assert.strictEqual(shouldRequestCode(pending({ codeRequestedAt: NOW - CODE_COOLDOWN }), NOW), true);
-});
-
-test('a code without the token it verifies against is useless', () => {
-  assert.strictEqual(shouldRequestCode({ pendingFlag: true, codeRequestedAt: NOW - 1000 }, NOW), true);
-});
-
-test('a code of unknown age counts as gone', () => {
-  assert.strictEqual(shouldRequestCode(pending({ codeRequestedAt: undefined }), NOW), true);
-  assert.strictEqual(shouldRequestCode(pending({ codeRequestedAt: "not a moment" }), NOW), true);
-  assert.strictEqual(shouldRequestCode(pending({ codeRequestedAt: 0 }), NOW), true);
-});
-
-test('a clock that moved backwards does not lock anyone out of a code', () => {
-  assert.strictEqual(shouldRequestCode(pending({ codeRequestedAt: NOW + CODE_COOLDOWN }), NOW), true);
+test('a code stays worth waiting for however old it is', () => {
+  // only the user can replace it, by signing in again: giving up on the wait
+  // here is what would have the app ask Picnic for another SMS
+  assert.strictEqual(awaitingVerification(pending({ codeRequestedAt: 1 })), true);
 });

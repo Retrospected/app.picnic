@@ -15,7 +15,8 @@
             "verify-button": "Verifieer",
             "resend-button": "Code opnieuw sturen",
             "code-sent": "Er is een nieuwe SMS-code verzonden.",
-            "verify-failed": "Verificatie mislukt. Probeer het opnieuw."
+            "verify-failed": "Verificatie mislukt. Probeer het opnieuw.",
+            "signin-needed": "Picnic vraagt om een SMS-code. De app vraagt die niet uit zichzelf aan, dus sla hieronder je inloggegevens op om een code te laten sturen."
         }
     },
     "tokens": {
@@ -30,6 +31,6 @@
         }
     },
     "notifications": {
-        "2fa-pending": "Picnic heeft een SMS-code gestuurd. Vul die in bij Picnic in de app-instellingen: tot die tijd kan de app je bestelling niet bijhouden."
+        "2fa-signin": "Picnic vraagt om een SMS-code voordat de app er weer in mag. Open de instellingen van de Picnic-app en sla je inloggegevens op om er een te laten sturen."
     }
 }
