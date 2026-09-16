@@ -10,12 +10,13 @@
         "order-status-button": "bestelling status",
         "save-button": "Wijzigingen opslaan",
         "2fa": {
-            "info": "Tweestapsverificatie is vereist. Er is een SMS-code verzonden naar het telefoonnummer van je Picnic-account.",
+            "heading": "Tweestapsverificatie",
+            "info": "Tweestapsverificatie is vereist. Er is een SMS-code verzonden naar het telefoonnummer van je Picnic-account. Codes verlopen na een paar minuten.",
             "code-label": "SMS-code",
             "verify-button": "Verifieer",
-            "resend-button": "Code opnieuw sturen",
-            "code-sent": "Er is een nieuwe SMS-code verzonden.",
-            "verify-failed": "Verificatie mislukt. Probeer het opnieuw."
+            "verify-failed": "Picnic heeft die code niet geaccepteerd. Codes verlopen na een paar minuten, dus sla je inloggegevens opnieuw op om een nieuwe te laten sturen.",
+            "signin-needed": "Picnic vraagt om een SMS-code. Log in met je inloggegevens en vul vervolgens de ontvangen code in.",
+            "startover-button": "Opnieuw beginnen"
         }
     },
     "tokens": {
@@ -28,5 +29,8 @@
             "startwindow": "Start van het bezorgvenster",
             "endwindow": "Einde van het bezorgvenster"
         }
+    },
+    "notifications": {
+        "2fa-signin": "Picnic vraagt om een SMS-code voordat de app er weer in mag. Open de instellingen van de Picnic-app en log opnieuw in om er een te laten sturen."
     }
 }

@@ -14,7 +14,22 @@
   <div class="form-group">
     <h2><var style="font-style:normal;" data-i18n="settings.settings"/></h2>
     <div>
-      <div class="panel panel-default">
+      <div class="panel panel-default" id="twofa-panel" style="display:none;">
+        <div class="panel-heading" data-i18n="settings.2fa.heading"></div>
+        <div class="panel-body">
+          <p id="signin-notice" style="display:none;" data-i18n="settings.2fa.signin-needed"></p>
+          <div id="twofa-section" style="display:none;">
+            <p data-i18n="settings.2fa.info"></p>
+            <div class="form-group">
+              <label for="otp" data-i18n="settings.2fa.code-label"></label>
+              <input class="form-control" id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="" />
+            </div>
+            <button id="verify-2fa" class="btn btn-default" type="button" data-i18n="settings.2fa.verify-button"></button>
+            <button id="cancel-2fa" class="btn btn-default" type="button" data-i18n="settings.2fa.startover-button"></button>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default" id="account-panel">
         <div class="panel-heading">Account</div>
         <div class="panel-body">
           <form role="form">
@@ -42,15 +57,6 @@
               <div><var id="order-status">loading...</var></div>
             </div>
           </form>
-          <div id="twofa-section" style="display:none; margin-top:15px; padding:10px; border:1px solid #ccc; border-radius:4px;">
-            <p data-i18n="settings.2fa.info"></p>
-            <div class="form-group">
-              <label for="otp" data-i18n="settings.2fa.code-label"></label>
-              <input class="form-control" id="otp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="" />
-            </div>
-            <button id="verify-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.verify-button"></var></button>
-            <button id="resend-2fa" class="right"><var style="font-style:normal;" data-i18n="settings.2fa.resend-button"></var></button>
-          </div>
           <button id="reset-order-status" class="right">Reset <var style="font-style:normal;" data-i18n="settings.order-status-button"></button>
           <button id="save" class="right"><var style="font-style:normal;" data-i18n="settings.save-button"></button>
         </div>
@@ -172,10 +178,27 @@
           var statusElement = document.getElementById('status');
           var orderStatusElement = document.getElementById('order-status');
           var resetOrderStatusElement = document.getElementById('reset-order-status');
+          var accountPanel = document.getElementById('account-panel');
+          var twofaPanel = document.getElementById('twofa-panel');
           var twofaSection = document.getElementById('twofa-section');
+          var signinNoticeElement = document.getElementById('signin-notice');
+
+          // The panel is only on screen while it has something to say, and says
+          // one of its two things at a time: a code to type in, or the login to
+          // do because there is no code worth typing in.
+          //
+          // A code to type in is the whole task, so the account panel goes away
+          // and comes back when the code is verified or given up on. The login
+          // to do is the opposite: that panel IS the way out, so it stays.
+          function showTwoFactor(part) {
+            twofaSection.style.display = part === twofaSection ? 'block' : 'none';
+            signinNoticeElement.style.display = part === signinNoticeElement ? 'block' : 'none';
+            twofaPanel.style.display = 'block';
+            accountPanel.style.display = part === twofaSection ? 'none' : 'block';
+          }
           var otpElement = document.getElementById('otp');
           var verify2faElement = document.getElementById('verify-2fa');
-          var resend2faElement = document.getElementById('resend-2fa');
+          var cancel2faElement = document.getElementById('cancel-2fa');
 
           Homey.api('GET', '/status', null, function ( err, result ) {
             if ( err ) return Homey.alert( err );
@@ -189,6 +212,18 @@
               // 2FA still pending, or the check could not reach Picnic: not a
               // reason to point at the credentials
               statusElement.style.color = "orange";
+
+              // a code was sent and is waiting to be typed in, so put the field
+              // for it on screen rather than behind a login first
+              if (result == "2FA PENDING") {
+                showTwoFactor(twofaSection);
+              }
+
+              // no code has been sent: only logging in asks for one, so say
+              // that instead of showing a field with nothing to put in it
+              if (result == "SIGN IN NEEDED") {
+                showTwoFactor(signinNoticeElement);
+              }
             }
             statusElement.innerHTML = result;
           });
@@ -224,7 +259,8 @@
               Homey.set('password', passwordElement.value)
 
               if (result === '2fa_required') {
-                twofaSection.style.display = 'block';
+                // the login the notice asked for has happened, and a code is on its way
+                showTwoFactor(twofaSection);
                 otpElement.value = '';
                 otpElement.focus();
                 return;
@@ -246,6 +282,9 @@
             }
             Homey.api('POST', '/verify2fa', { 'otp': otp }, function( err, result ) {
               if( err ) return Homey.alert(err);
+              if (result === 'invalid_code') {
+                return Homey.alert(Homey.__('settings.2fa.verify-failed'));
+              }
               if (result !== 'success') {
                 return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
               }
@@ -253,13 +292,10 @@
             });
           });
 
-          resend2faElement.addEventListener('click', function(e) {
-            Homey.api('POST', '/generate2fa', { 'channel': 'SMS' }, function( err, result ) {
+          cancel2faElement.addEventListener('click', function(e) {
+            Homey.api('POST', '/cancel2fa', null, function( err, result ) {
               if( err ) return Homey.alert(err);
-              if (result !== 'success') {
-                return Homey.alert(result || Homey.__('settings.2fa.verify-failed'));
-              }
-              Homey.alert(Homey.__('settings.2fa.code-sent'));
+              window.location.reload();
             });
           });
         }
