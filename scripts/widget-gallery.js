@@ -105,9 +105,13 @@ async function build() {
 }
 
 // What Homey does to the widget's page before the widget's own script runs:
-// the style variables, the dark mode class, and the Homey object.
+// the style variables, the classes of its style library the widget uses, the
+// dark mode class, and the Homey object.
 function mount(frame, theme, payload) {
   const doc = frame.contentDocument;
+  const classes = doc.createElement('style');
+  classes.textContent = '.homey-widget { padding: 16px; } .homey-widget-full { padding: 0; }';
+  doc.head.prepend(classes);
   if (theme == 'dark') doc.body.classList.add('homey-dark-mode');
   doc.documentElement.style.cssText = THEMES[theme] + 'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--homey-text-color);background:var(--homey-background-color)';
   frame.contentWindow.onHomeyReady({

@@ -595,6 +595,8 @@ test('products in the cart while an order is open are said first, with the time 
   assert.strictEqual(noteOf(nodes), '1 more product in your cart / 11 minutes left to add them');
   assert.strictEqual(shortNoteOf(nodes), '1 product · 11\u00a0min\u00a0left');
   assert.strictEqual(nodes.note.dataset.tone, 'warn');
+  // which a half width tile has room for instead of the amount
+  assert.strictEqual(nodes.detail.dataset.note, 'shown');
 });
 
 test('the last minute to add is not pluralised', () => {
