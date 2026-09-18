@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { deriveOrderEvent, windowTriggersStillApply } = require('../lib/orderevent.js');
+const { deriveOrderEvent, windowTriggersStillApply, deriveOrderFacts } = require('../lib/orderevent.js');
 
 const SLOT = {
   window_start: "2026-07-28T16:00:00.000+02:00",
@@ -124,10 +124,39 @@ test('the moment of the poll defaults to the current time', () => {
   assert.ok(delivered >= before && delivered <= Date.now(), "expected " + event.delivery_time + " to be about now");
 });
 
-// Pre-existing behaviour: a fresh install without any order reports a delivery
-// once, so the app settles on the delivered state and the slow poll interval.
-test('an empty response without a stored status reports a delivery', () => {
-  assert.deepStrictEqual(deriveOrderEvent([], null, null, NOW), {
+test('an empty response for an app that was following nothing is nothing', () => {
+  // a fresh install, or a sign-in between deliveries: Picnic saying there is
+  // no current delivery is not a delivery
+  assert.strictEqual(deriveOrderEvent([], null, null, NOW), null);
+  assert.strictEqual(deriveOrderEvent([], "", null, NOW), null);
+  assert.strictEqual(deriveOrderEvent([], "groceries_delivered", null, NOW), null);
+});
+
+test('an empty response after an order was being followed is that order delivered', () => {
+  assert.deepStrictEqual(deriveOrderEvent([], "groceries_ordered", null, NOW), {
+    event: "groceries_delivered",
+    delivery_time: NOW
+  });
+  assert.deepStrictEqual(deriveOrderEvent([], "delivery_announced", null, NOW), {
+    event: "groceries_delivered",
+    delivery_time: NOW
+  });
+});
+
+test('a delivery Picnic stamps as delivered counts whether or not it was followed', () => {
+  const delivered = summary({ delivery_time: { start: "2026-07-28T16:27:17.942+02:00" } });
+
+  assert.deepStrictEqual(deriveOrderEvent(delivered, null, null, NOW), {
+    event: "groceries_delivered",
+    delivery_time: "2026-07-28T16:27:17.942+02:00"
+  });
+});
+
+test('a delivery without a moment on it is only delivered for an order that was followed', () => {
+  const unstamped = summary({ delivery_time: {} });
+
+  assert.strictEqual(deriveOrderEvent(unstamped, null, null, NOW), null);
+  assert.deepStrictEqual(deriveOrderEvent(unstamped, "delivery_announced", null, NOW), {
     event: "groceries_delivered",
     delivery_time: NOW
   });
@@ -163,4 +192,47 @@ test('an unreadable delivery moment leaves the window triggers alone', () => {
 test('a delivery moment defaults to now, so a passed window keeps its triggers', () => {
   assert.strictEqual(windowTriggersStillApply(SLOT.window_start), true);
   assert.strictEqual(windowTriggersStillApply(new Date(Date.now() + 60000).toISOString()), false);
+});
+
+test('the cut off of the slot is read off every poll, not off an event', () => {
+  const facts = deriveOrderFacts(summary({ slot: Object.assign({ cut_off_time: "2026-07-28T14:00:00.000+02:00" }, SLOT) }));
+
+  assert.strictEqual(facts.cutOffTime, "2026-07-28T14:00:00.000+02:00");
+});
+
+test('a slot without a cut off, or no slot, or no delivery, reports nothing rather than guessing', () => {
+  assert.strictEqual(deriveOrderFacts(summary()).cutOffTime, null);
+  assert.strictEqual(deriveOrderFacts([{}]).cutOffTime, null);
+  assert.strictEqual(deriveOrderFacts([]).cutOffTime, null);
+  assert.strictEqual(deriveOrderFacts(null).cutOffTime, null);
+});
+
+test('a cut off that is not a timestamp is not passed on as one', () => {
+  assert.strictEqual(deriveOrderFacts([{ slot: { cut_off_time: 1769000000 } }]).cutOffTime, null);
+  assert.strictEqual(deriveOrderFacts([{ slot: { cut_off_time: "" } }]).cutOffTime, null);
+});
+
+test('the delivery being followed is remembered by its id', () => {
+  assert.strictEqual(deriveOrderFacts(summary({ delivery_id: "d123" })).deliveryId, "d123");
+  assert.strictEqual(deriveOrderFacts([{ delivery_id: "d123" }]).deliveryId, "d123");
+  assert.strictEqual(deriveOrderFacts(summary()).deliveryId, null);
+  assert.strictEqual(deriveOrderFacts([]).deliveryId, null);
+});
+
+test('an order placed after the last delivery is a new order, not more of the old one', () => {
+  const placed = [{
+    delivery_id: "d2",
+    status: "CURRENT",
+    slot: { window_start: "2026-09-19T08:30:00.000+02:00", window_end: "2026-09-19T09:30:00.000+02:00", cut_off_time: "2026-09-18T13:00:00.000+02:00" },
+    orders: [{ total_price: 4512 }]
+  }];
+
+  assert.deepStrictEqual(deriveOrderEvent(placed, "groceries_delivered", null, NOW), {
+    event: "groceries_ordered",
+    price: 45.12,
+    eta1_start: "2026-09-19T08:30:00.000+02:00",
+    eta1_end: "2026-09-19T09:30:00.000+02:00"
+  });
+  assert.strictEqual(deriveOrderFacts(placed).cutOffTime, "2026-09-18T13:00:00.000+02:00");
+  assert.strictEqual(deriveOrderFacts(placed).deliveryId, "d2");
 });

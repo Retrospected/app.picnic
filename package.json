@@ -3,7 +3,18 @@
   "version": "3.7.0",
   "description": "Doing your groceries at Picnic via Homey.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "validate": "node scripts/validate.js",
+    "deps": "node scripts/deps.js",
+    "prestart": "node scripts/deps.js",
+    "start": "homey app run",
+    "prestart:clean": "node scripts/deps.js",
+    "start:clean": "homey app run --clean",
+    "preinstall:homey": "node scripts/deps.js",
+    "install:homey": "homey app install",
+    "compose": "homey app compose",
+    "prevalidate:cli": "node scripts/deps.js",
+    "validate:cli": "homey app validate --level publish"
   },
   "dependencies": {
     "md5": "^2.2.1",
@@ -23,5 +34,8 @@
   "bugs": {
     "url": "https://github.com/Retrospected/app.picnic/issues"
   },
-  "homepage": "https://github.com/Retrospected/app.picnic#readme"
+  "homepage": "https://github.com/Retrospected/app.picnic#readme",
+  "devDependencies": {
+    "homey-lib": "^2.52.2"
+  }
 }
