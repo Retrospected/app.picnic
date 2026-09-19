@@ -105,6 +105,23 @@
       fill: var(--homey-color-white, #ffffff);
     }
 
+    /* while Picnic is being asked on the widget's behalf, which is what a tap
+       does, its mark breathes: the tap arrived, and something is coming */
+    .tile[data-refreshing="yes"] .logo {
+      animation: asking 1.2s ease-in-out infinite;
+    }
+
+    @keyframes asking {
+      50% { opacity: 0.45; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tile[data-refreshing="yes"] .logo {
+        animation: none;
+        opacity: 0.6;
+      }
+    }
+
     /* The state's icon on its own, for a state that has no name to put in a
        badge: the icon says what the widget is about instead. */
     .badge {
@@ -255,6 +272,11 @@
       text-overflow: ellipsis;
     }
 
+    /* the shorter form of when, only ever used on a half width tile */
+    .detail .when-short {
+      display: none;
+    }
+
     /* when and at what time, next to each other where there is room for it */
     .when:not(:empty) + .what:not(:empty)::before {
       content: " · ";
@@ -371,6 +393,19 @@
         display: none;
       }
 
+      /* A tile has room for three lines under the number: a note of two
+         leaves one for when, so a when that has a shorter form takes it
+         there. For an order that is its window without the day, which the
+         countdown above it already pins down. */
+      .detail[data-note="shown"] .when-short:not(:empty) {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+      }
+
+      .detail[data-note="shown"] .when-short:not(:empty) + .when {
+        display: none;
+      }
+
       .caption {
         flex-basis: 100%;
         font-size: var(--homey-font-size-small, 14px);
@@ -409,6 +444,19 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
+
+      /* unless it comes in two parts, each on a line of its own, so the
+         first running long cannot push the second out of sight */
+      .note .short[data-lines="2"] {
+        display: block;
+      }
+
+      .note .short[data-lines="2"] .part {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
 
     [hidden] {
@@ -441,13 +489,13 @@
 
     <div class="body">
       <div class="headline" id="headline" aria-live="polite"><span class="caption" id="caption" hidden></span><span class="figure"><span class="value" id="value"></span><span class="unit" id="unit"></span></span></div>
-      <div class="detail" id="detail"><span class="when" id="when"></span><span class="what" id="what"></span></div>
+      <div class="detail" id="detail"><span class="when-short" id="when-short"></span><span class="when" id="when"></span><span class="what" id="what"></span></div>
 
       <div class="track" id="track" hidden>
         <div class="fill" id="fill"></div>
       </div>
 
-      <div class="note" id="note" hidden><span class="long"><span class="line" id="note-first"></span><span class="line" id="note-second"></span></span><span class="short" id="note-short"></span></div>
+      <div class="note" id="note" hidden><span class="long"><span class="line" id="note-first"></span><span class="line" id="note-second"></span></span><span class="short" id="note-short-lines"><span class="part" id="note-short"></span><span class="part" id="note-short-second"></span></span></div>
     </div>
   </div>
 
@@ -456,6 +504,12 @@
     // something changes, so this is the net underneath that rather than the
     // way the widget finds out.
     var REFRESH_INTERVAL = 30 * 1000;
+
+    // How often a widget has Picnic itself asked, rather than the app: when it
+    // comes into view and when it is tapped. The app keeps to the same limit
+    // for every widget on every dashboard together, so this only saves the
+    // widget asking for what it would not get.
+    var FRESH_INTERVAL = 30 * 1000;
 
     // How often what is on screen is worked out again. Nothing here is ever
     // counted down in seconds, so this only has to be often enough that the
@@ -492,6 +546,9 @@
     var settings = {};
     var state = null;
 
+    // when the widget last had Picnic asked, on this device's clock
+    var freshenedAt = 0;
+
     // Homey's clock, minus the clock of whatever is showing the dashboard. A
     // tablet running four minutes fast would otherwise count down to a minute
     // that is not the one the app is working towards.
@@ -520,8 +577,45 @@
       setTimeout(show, 3000);
       refresh().then(show, show);
 
-      setInterval(refresh, REFRESH_INTERVAL);
+      // What the app has is shown straight away, and what Picnic says now
+      // after it: a dashboard opened after filling the cart in Picnic's app
+      // should show that cart, not the one from before.
+      freshen();
+
+      // Coming back into view is the same, whether from another app or from
+      // another dashboard, and a widget out of view does not ask at all.
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) freshen();
+      });
+
+      // A tap asks too, for anyone who wants to be sure, and says with a
+      // buzz that it did. A tap within half a minute of the last has nothing
+      // new to fetch, and is left alone.
+      element('tile').addEventListener('click', function () {
+        if (freshen() && typeof homey.hapticFeedback == 'function') homey.hapticFeedback();
+      });
+
+      setInterval(function () {
+        if (!document.hidden) refresh();
+      }, REFRESH_INTERVAL);
       setInterval(render, TICK_INTERVAL);
+    }
+
+    // Has the app ask Picnic, and shows what comes back, unless that was done
+    // less than half a minute ago. Whether it asked.
+    function freshen() {
+      if (Date.now() - freshenedAt < FRESH_INTERVAL) return false;
+
+      freshenedAt = Date.now();
+      element('tile').dataset.refreshing = 'yes';
+
+      var done = function () { element('tile').dataset.refreshing = ''; };
+
+      Promise.resolve(homey.api('POST', '/refresh', {}))
+        .then(adopt, function (error) { console.error(error); })
+        .then(done, done);
+
+      return true;
     }
 
     function refresh() {
@@ -534,6 +628,11 @@
 
     function adopt(data) {
       if (!data || typeof data != 'object') return;
+
+      // Answers and announcements can arrive out of order: a quick one asked
+      // after a slow one that went to Picnic. What is older than what is on
+      // screen already has nothing to add.
+      if (state && Date.parse(data['now']) < Date.parse(state['now'])) return;
 
       state = data;
       clockOffset = Date.parse(data['now']) - Date.now();
@@ -659,17 +758,50 @@
 
     // The next day something can be delivered on: how many of its slots are
     // still open and when the first of those is, for a widget with nothing
-    // planned to say what could be.
+    // planned to say what could be. The first is named by its window, since
+    // that is what is booked, and by its start where its end is not known.
     function slotsNote(next) {
       if (!next || !next['day'] || !isAmount(next['available'])) return null;
 
-      var values = { d: next['day'], a: next['available'], t: next['total'], h: next['time'] };
+      var range = next['window'] && next['window'] != next['time'] ? next['window'] : '';
+      var values = { d: next['day'], a: next['available'], t: next['total'], h: range || next['time'] };
 
+      // the short form in two parts, how many are free and which is first,
+      // so that on a half width tile each keeps to a line, and the second can
+      // give way where there is no room for it
       return {
         first: text('next-slots', values),
-        second: text('next-slots-first', values),
+        second: text(range ? 'next-slots-first-window' : 'next-slots-first', values),
         short: text('next-slots-short', values),
+        shortSecond: text('next-slots-short-first', values),
         tone: null
+      };
+    }
+
+    // The slot someone picked for a cart that is still empty: when it is, and
+    // until when there is to fill the cart and order it, counted down in
+    // minutes over the last hour like any other deadline to order by.
+    function chosenSlotNote(slot) {
+      if (!slot || !slot['day']) return null;
+
+      var minutes = minutesUntil(slot['cutOffAt']);
+      if (minutes === null) return null;
+
+      var urgent = minutes <= URGENT_MINUTES;
+      // today goes without saying; any other day does not
+      var deadline = slot['cutOffDay'] && slot['cutOffDay'] != label('today') ? slot['cutOffLabel'] : slot['cutOffTime'];
+      var values = { d: slot['day'], w: slot['window'], t: deadline, n: minutes };
+
+      var deadlineLine = text(urgent ? 'chosen-slot-within' : 'chosen-slot-before', values);
+
+      return {
+        first: text('chosen-slot', values),
+        second: deadlineLine,
+        // a half width tile has no room for "chosen slot", but does for the
+        // slot and the deadline on a line each
+        short: [slot['day'], slot['window']].filter(Boolean).join(' '),
+        shortSecond: deadlineLine,
+        tone: urgent ? 'warn' : null
       };
     }
 
@@ -717,6 +849,9 @@
         // the detail line: when, and what about it
         when: '',
         what: '',
+        // when, for a half width tile that also has a note to show and so
+        // has one line for it: what the headline does not already say
+        whenShort: '',
         progress: null,
         note: null
       };
@@ -733,6 +868,10 @@
             shown.caption = left.caption || '';
             shown.headline = left.value;
             shown.unit = left.unit || '';
+            // the countdown and the window's time only fit one day between
+            // them, so under a note the window can go without its day: a
+            // date, or "tomorrow" in English, takes it onto a second line
+            if (left.kind == 'countdown' && data['day'] && data['window']) shown.whenShort = data['window'];
           } else {
             shown.headline = label('ordered');
           }
@@ -823,7 +962,10 @@
             // form: the long one is two lines, and the note may be taken
             shown.headline = cart['slotClosed'] ? label('slot-closed') : label('pick-slot');
             var open = slotsNote(data['nextSlots']);
-            if (open) shown.when = open.short;
+            if (open) {
+              shown.when = open.short;
+              shown.what = open.shortSecond;
+            }
             if (short !== null) shown.note = note(text('minimum', { t: money(short) }), 'warn');
           }
           break;
@@ -842,8 +984,9 @@
         default:
           shown.headline = label('empty');
           shown.when = data['cartKnown'] ? label('empty-cart') : '';
-          // nothing planned, but this is when something could be
-          shown.note = slotsNote(data['nextSlots']);
+          // nothing ordered, but this is the slot picked for it, or failing
+          // that, when something could be delivered
+          shown.note = chosenSlotNote(data['chosenSlot']) || slotsNote(data['nextSlots']);
       }
 
       return shown;
@@ -883,6 +1026,7 @@
       element('headline').dataset.valueTone = shown.valueTone || '';
 
       element('when').textContent = shown.when;
+      element('when-short').textContent = shown.whenShort;
       element('what').textContent = shown.what;
       element('detail').hidden = shown.when == '' && shown.what == '';
 
@@ -896,6 +1040,9 @@
       element('note-second').textContent = said && said.second ? said.second : '';
       element('note-second').hidden = !(said && said.second);
       element('note-short').textContent = said ? (said.short || said.first) : '';
+      element('note-short-second').textContent = said && said.shortSecond ? said.shortSecond : '';
+      element('note-short-second').hidden = !(said && said.shortSecond);
+      element('note-short-lines').dataset.lines = said && said.shortSecond ? '2' : '1';
       element('note').dataset.tone = said && said.tone ? said.tone : '';
       element('note').hidden = !said;
       element('detail').dataset.note = said ? 'shown' : '';

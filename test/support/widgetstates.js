@@ -27,7 +27,7 @@ function widgetStates(language, at) {
 
   // an order of 29 products, delivered tomorrow morning
   const order = { price: 53.43, orderCount: 29, day: tomorrow, window: '08:30–09:30' };
-  const slots = { day: tomorrow, time: '08:30', available: 3, total: 12 };
+  const slots = { day: tomorrow, time: '08:30', window: '08:30–09:30', available: 3, total: 12 };
 
   const states = {
     'ordered-cart': {
@@ -51,12 +51,14 @@ function widgetStates(language, at) {
       payload: Object.assign({ state: 'announced', countdownTo: iso(19 * 60), progress: null, cutOffAt: null, cart: null }, order, { window: '08:59–09:19', windowEnd: iso(19 * 60 + 20) })
     },
     'underway': {
+      // left 40 minutes ago, 14 to the window and 20 in it
       title: 'Van on the road, 14 minutes out',
-      payload: Object.assign({ state: 'underway', countdownTo: iso(14), progress: 0.62 }, order, { day: today, window: '16:11–16:31', windowEnd: iso(34) })
+      payload: Object.assign({ state: 'underway', countdownTo: iso(14), progress: 0.54 }, order, { day: today, window: '16:11–16:31', windowEnd: iso(34) })
     },
     'arriving': {
+      // left 35 minutes ago, 5 into the 20 minute window
       title: 'Arriving, inside the window',
-      payload: Object.assign({ state: 'arriving', countdownTo: iso(-5), progress: 0.25 }, order, { day: today, window: '16:11–16:31', windowEnd: iso(15) })
+      payload: Object.assign({ state: 'arriving', countdownTo: iso(-5), progress: 0.7 }, order, { day: today, window: '16:11–16:31', windowEnd: iso(15) })
     },
     'overdue': {
       title: 'Late, 12 minutes past the window',
@@ -67,8 +69,8 @@ function widgetStates(language, at) {
       payload: Object.assign({ state: 'delivered', deliveredTime: '08:47', deposit: null }, order, { day: today, window: '' })
     },
     'delivered-deposit': {
-      title: 'Delivered, deposit counted',
-      payload: Object.assign({ state: 'delivered', deliveredTime: '08:47', deposit: { returned: 4.8, containers: [{ name: 'Flessen', quantity: 6 }] } }, order, { day: today, window: '' })
+      title: 'Delivered, deposit counted and the payment settled',
+      payload: Object.assign({ state: 'delivered', deliveredTime: '08:47', deposit: { returned: 0.54, containers: [{ name: 'blikje', quantity: 1 }, { name: 'Tasjes', quantity: 1 }] } }, order, { price: 51.89, day: today, window: '' })
     },
     'cart-minimum': {
       title: 'Cart below the minimum, slot picked',
@@ -93,6 +95,10 @@ function widgetStates(language, at) {
     'empty': {
       title: 'Nothing planned, empty cart',
       payload: { state: 'empty', cartKnown: true, nextSlots: slots }
+    },
+    'empty-slot': {
+      title: 'Nothing planned, empty cart with a slot picked',
+      payload: { state: 'empty', cartKnown: true, nextSlots: slots, chosenSlot: { day: tomorrow, window: '14:30–15:30', cutOffAt: iso(8 * 60), cutOffTime: '23:00', cutOffDay: today, cutOffLabel: today + ' 23:00' } }
     },
     'empty-unknown': {
       title: 'Nothing planned, cart never asked about',

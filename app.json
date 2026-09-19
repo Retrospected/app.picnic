@@ -416,6 +416,10 @@
         "getState": {
           "method": "GET",
           "path": "/state"
+        },
+        "refresh": {
+          "method": "POST",
+          "path": "/refresh"
         }
       },
       "id": "delivery"

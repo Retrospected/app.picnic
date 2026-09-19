@@ -31,6 +31,34 @@ test('nothing ordered leaves the widget with nothing to show', () => {
   assert.strictEqual(state.progress, null);
 });
 
+// an empty cart set to a slot tomorrow, which can be ordered for until 23:00
+function emptyCartWithSlot(chosen) {
+  return {
+    totalPrice: 0,
+    productCount: 0,
+    slot: { chosen: chosen, windowStart: "2026-07-29T14:30:00.000+02:00", windowEnd: "2026-07-29T15:30:00.000+02:00", cutOffAt: "2026-07-28T23:00:00.000+02:00" }
+  };
+}
+
+test('an empty cart with a slot picked has nothing planned, and that slot in mind', () => {
+  const state = deriveDeliveryState({ orderStatus: "", cart: emptyCartWithSlot(true), now: WINDOW_START, checkedAt: WINDOW_START });
+
+  assert.strictEqual(state.state, "empty");
+  assert.deepStrictEqual(state.chosenSlot, {
+    windowStart: "2026-07-29T14:30:00.000+02:00",
+    windowEnd: "2026-07-29T15:30:00.000+02:00",
+    cutOffAt: "2026-07-28T23:00:00.000+02:00"
+  });
+});
+
+test('a slot Picnic suggested by itself, or one past its deadline, is not a slot in mind', () => {
+  const suggested = deriveDeliveryState({ orderStatus: "", cart: emptyCartWithSlot(false), now: WINDOW_START, checkedAt: WINDOW_START });
+  const late = deriveDeliveryState({ orderStatus: "", cart: emptyCartWithSlot(true), now: "2026-07-28T23:10:00.000+02:00", checkedAt: "2026-07-28T23:10:00.000+02:00" });
+
+  assert.strictEqual(suggested.chosenSlot, null);
+  assert.strictEqual(late.chosenSlot, null);
+});
+
 test('an app that cannot reach Picnic says so rather than that nothing is planned', () => {
   const state = deriveDeliveryState(stored({ signInNeeded: true }));
 
@@ -62,19 +90,19 @@ test('an announced delivery counts down to its window without a bar: the van has
 // the van on the road, as Picnic reports it
 const ON_THE_ROAD = { inProgress: true, etaStart: WINDOW_START, etaEnd: WINDOW_END };
 
-test('a van on the road is on its way, and fills the bar from the moment it left', () => {
+test('a van on the road is on its way, and fills the bar from the moment it left to the end of its window', () => {
   const state = deriveDeliveryState(stored({ position: ON_THE_ROAD, underwayAt: "2026-07-28T15:00:00.000+02:00" }));
 
   assert.strictEqual(state.state, "underway");
   assert.strictEqual(state.countdownTo, WINDOW_START);
-  assert.strictEqual(state.progress, 0.5);
+  assert.strictEqual(state.progress, 0.25);
 });
 
 test('a van seen on the road by an app that did not write the moment down fills from the last hour', () => {
   const state = deriveDeliveryState(stored({ position: ON_THE_ROAD, underwayAt: null, now: "2026-07-28T15:45:00.000+02:00" }));
 
   assert.strictEqual(state.state, "underway");
-  assert.strictEqual(state.progress, 0.75);
+  assert.strictEqual(state.progress, 0.375);
 });
 
 test('a van that just left starts the bar at zero', () => {
@@ -85,13 +113,13 @@ test('a van that just left starts the bar at zero', () => {
 
 test('the live window from the road beats the announced one', () => {
   const live = { inProgress: true, etaStart: "2026-07-28T16:20:00.000+02:00", etaEnd: "2026-07-28T16:40:00.000+02:00" };
-  const state = deriveDeliveryState(stored({ position: live, underwayAt: "2026-07-28T15:40:00.000+02:00", now: "2026-07-28T16:05:00.000+02:00" }));
+  const state = deriveDeliveryState(stored({ position: live, underwayAt: "2026-07-28T15:40:00.000+02:00", now: "2026-07-28T16:10:00.000+02:00" }));
 
   // past the announced start, but the van says it is still on its way
   assert.strictEqual(state.state, "underway");
   assert.strictEqual(state.countdownTo, "2026-07-28T16:20:00.000+02:00");
   assert.strictEqual(state.etaEnd, "2026-07-28T16:40:00.000+02:00");
-  assert.strictEqual(state.progress, 0.625);
+  assert.strictEqual(state.progress, 0.5);
 });
 
 test('a route that is not being driven is not a van on its way', () => {
@@ -106,7 +134,7 @@ test('a van on the road without a window of its own keeps the announced one', ()
 
   assert.strictEqual(state.state, "underway");
   assert.strictEqual(state.countdownTo, WINDOW_START);
-  assert.strictEqual(state.progress, 0.5);
+  assert.strictEqual(state.progress, 0.25);
 });
 
 test('an order without a window says it was ordered and counts down to nothing', () => {
@@ -121,14 +149,29 @@ test('the window itself has the groceries arriving', () => {
 
   assert.strictEqual(state.state, "arriving");
   assert.strictEqual(state.countdownTo, null);
-  assert.strictEqual(state.progress, 0.25);
+  // the van was never seen leaving, so its trip is taken to be the last hour
+  // before the window and the window itself
+  assert.strictEqual(state.progress, 0.625);
 });
 
 test('the start of the window is already arriving rather than a countdown of zero', () => {
   const state = deriveDeliveryState(stored({ now: WINDOW_START }));
 
   assert.strictEqual(state.state, "arriving");
-  assert.strictEqual(state.progress, 0);
+  assert.strictEqual(state.countdownTo, null);
+});
+
+test('the bar goes on filling into the window rather than starting over at its start', () => {
+  const road = { position: ON_THE_ROAD, underwayAt: "2026-07-28T15:00:00.000+02:00" };
+  const before = deriveDeliveryState(stored(Object.assign({ now: "2026-07-28T15:59:00.000+02:00" }, road)));
+  const at = deriveDeliveryState(stored(Object.assign({ now: WINDOW_START }, road)));
+  const inside = deriveDeliveryState(stored(Object.assign({ now: "2026-07-28T16:30:00.000+02:00" }, road)));
+
+  assert.strictEqual(before.state, "underway");
+  assert.strictEqual(at.state, "arriving");
+  assert.ok(before.progress < at.progress && at.progress < inside.progress);
+  assert.strictEqual(at.progress, 0.5);
+  assert.strictEqual(inside.progress, 0.75);
 });
 
 test('an order still open past its window is overdue', () => {

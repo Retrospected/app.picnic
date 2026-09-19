@@ -6,5 +6,11 @@ module.exports = {
   // that it may not go to Picnic: it reads what the poll last wrote down.
   async getState({ homey }) {
     return await homey.app.getDeliveryWidgetState();
+  },
+
+  // The same, as fresh as Picnic can make it: for a widget that just came
+  // into view or was tapped. The app decides how often that reaches Picnic.
+  async refresh({ homey }) {
+    return await homey.app.refreshDeliveryWidgetState();
   }
 };

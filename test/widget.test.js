@@ -16,7 +16,7 @@ const script = html.match(/<script type="text\/javascript">([\s\S]*?)<\/script>/
 // the English labels the app hands over, straight from the locale file
 const LABELS = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'en.json'), 'utf8')).widget.delivery;
 
-const NODES = ['tile', 'badge', 'badge-icon', 'status-pill', 'status-icon', 'status', 'meta', 'caption', 'headline', 'value', 'unit', 'detail', 'when', 'what', 'track', 'fill', 'note', 'note-first', 'note-second', 'note-short'];
+const NODES = ['tile', 'badge', 'badge-icon', 'status-pill', 'status-icon', 'status', 'meta', 'caption', 'headline', 'value', 'unit', 'detail', 'when-short', 'when', 'what', 'track', 'fill', 'note', 'note-first', 'note-second', 'note-short-lines', 'note-short', 'note-short-second'];
 
 // The note as a full width tile shows it, its two lines joined by " / ", and as
 // a half width one does.
@@ -25,7 +25,7 @@ function noteOf(nodes) {
 }
 
 function shortNoteOf(nodes) {
-  return nodes['note-short'].textContent;
+  return [nodes['note-short'].textContent, nodes['note-short-second'].hidden ? '' : nodes['note-short-second'].textContent].filter(Boolean).join(' / ');
 }
 
 function harness(settings) {
@@ -41,12 +41,23 @@ function harness(settings) {
       clientWidth: 0,
       scrollWidth: 0,
       setAttribute(name, value) { this.attributes[name] = value; },
-      addEventListener() { }
+      listeners: {},
+      addEventListener(type, listener) { this.listeners[type] = listener; }
     };
   });
 
+  // what the widget asked the app, and what the page is listening for
+  const calls = [];
+  const page = { hidden: false, listeners: {} };
+  // what the stand-in Homey buzzed
+  const buzzes = [];
+
   const context = {
-    document: { getElementById: id => nodes[id] },
+    document: {
+      getElementById: id => nodes[id],
+      get hidden() { return page.hidden; },
+      addEventListener(type, listener) { page.listeners[type] = listener; }
+    },
     console: { error() { } },
     Intl,
     Date,
@@ -68,11 +79,15 @@ function harness(settings) {
     ready() { },
     on() { },
     getSettings: () => settings || {},
-    api: () => Promise.resolve(null)
+    api: (method, route) => { calls.push(method + ' ' + route); return Promise.resolve(null); },
+    hapticFeedback: () => { buzzes.push(true); }
   });
 
   return {
     nodes,
+    calls,
+    page,
+    buzzes,
     adopt: context.adopt,
     render: context.render,
     // the caption above the number reads as part of it: "Delivery in" "15 min"
@@ -120,7 +135,15 @@ function payload(stored, extra) {
       } : null
     } : null,
     cartKnown: derived.cartKnown,
-    nextSlots: derived.nextSlots ? { day: 'tomorrow', time: '08:30', available: derived.nextSlots.available, total: derived.nextSlots.total } : null,
+    chosenSlot: derived.chosenSlot ? {
+      day: 'tomorrow',
+      window: '14:30–15:30',
+      cutOffAt: derived.chosenSlot.cutOffAt,
+      cutOffTime: '23:00',
+      cutOffDay: 'today',
+      cutOffLabel: 'today 23:00'
+    } : null,
+    nextSlots: derived.nextSlots ? { day: 'tomorrow', time: '08:30', window: derived.nextSlots.windowEnd ? '08:30–09:30' : '08:30', available: derived.nextSlots.available, total: derived.nextSlots.total } : null,
     checkedLabel: derived.checkedAt ? 'Sun 5 Apr 08:00' : '',
     locale: 'en-US',
     labels: LABELS
@@ -145,7 +168,7 @@ function cart(extra) {
   }, extra);
 }
 
-test('a van on the road counts the minutes down and fills the bar', () => {
+test('a van on the road counts the minutes down and fills the bar towards the end of its window', () => {
   const { nodes, adopt, headline, detail } = harness();
 
   adopt(payload(Object.assign({ now: '2026-07-28T15:56:00.000+02:00' }, UNDERWAY)));
@@ -156,7 +179,8 @@ test('a van on the road counts the minutes down and fills the bar', () => {
   assert.strictEqual(headline(), 'Delivery in 15 min');
   assert.strictEqual(detail(), 'today 16:11–16:31');
   assert.strictEqual(nodes.track.hidden, false);
-  assert.strictEqual(nodes.fill.style.width, '50%');
+  // 15 of the 50 minutes from the van leaving at 15:41 to the end of the window
+  assert.strictEqual(nodes.fill.style.width, '30%');
   assert.strictEqual(nodes.meta.textContent, '€52.50');
 });
 
@@ -185,14 +209,16 @@ test('a single minute left is not pluralised', () => {
   assert.strictEqual(headline(), 'Delivery in 1 min');
 });
 
-test('the window itself says the groceries are arriving', () => {
+test('the window itself says the groceries are arriving, with the bar most of the way', () => {
   const { nodes, adopt, headline } = harness();
 
-  adopt(payload(Object.assign({ now: '2026-07-28T16:16:00.000+02:00' }, ANNOUNCED)));
+  adopt(payload(Object.assign({ now: '2026-07-28T16:16:00.000+02:00' }, UNDERWAY)));
 
   assert.strictEqual(nodes.status.textContent, 'Almost there');
   assert.strictEqual(headline(), 'Any minute now');
-  assert.strictEqual(nodes.fill.style.width, '25%');
+  // 35 of the 50 minutes from the van leaving to the end of the window: the
+  // bar goes on from where it was at 16:11, rather than starting over there
+  assert.strictEqual(nodes.fill.style.width, '70%');
 });
 
 test('a delivery that is late says so in its own colour', () => {
@@ -245,7 +271,7 @@ test('four hours after the delivery the widget has moved on', () => {
   adopt(payload(Object.assign({ orderStatus: 'groceries_delivered', deliveredAt: '2026-07-28T12:00:00.000+02:00', now: '2026-07-28T16:01:00.000+02:00' }, WINDOW), { cartKnown: true }));
 
   assert.strictEqual(nodes.status.textContent, '');
-  assert.strictEqual(headline(), 'Nothing planned');
+  assert.strictEqual(headline(), 'No pending order');
   assert.strictEqual(detail(), 'Your cart is empty');
   assert.strictEqual(nodes.meta.textContent, '');
 });
@@ -291,9 +317,10 @@ test('amounts can be turned off', () => {
   adopt(payload(Object.assign({ now: '2026-07-28T15:56:00.000+02:00' }, ANNOUNCED)));
   assert.strictEqual(nodes.meta.textContent, '');
 
-  adopt(payload({ orderStatus: '', cart: cart({ slot: null }), now: '2026-07-28T10:00:00.000+02:00' }));
-  assert.strictEqual(headline(), 'Pick a delivery slot');
-  assert.strictEqual(nodes.meta.textContent, '9 products');
+  const cartOnly = harness({ show_price: false });
+  cartOnly.adopt(payload({ orderStatus: '', cart: cart({ slot: null }), now: '2026-07-28T10:00:00.000+02:00' }));
+  assert.strictEqual(cartOnly.headline(), 'Pick a delivery slot');
+  assert.strictEqual(cartOnly.nodes.meta.textContent, '9 products');
 
   // and a cart with a slot keeps its deadline, just not the amount next to
   // it, nor what it is short of the minimum, which is an amount too
@@ -462,7 +489,7 @@ test('a picked slot whose deadline passed asks for a new one, and says what ther
   adopt(payload({ orderStatus: '', cart: cart({ nextSlots: NEXT }), now: '2026-07-29T23:30:00.000+02:00' }));
 
   assert.strictEqual(headline(), 'Pick a new delivery slot');
-  assert.strictEqual(detail(), 'tomorrow 3/12 free, first 08:30');
+  assert.strictEqual(detail(), 'tomorrow 3/12 free · first 08:30–09:30');
 });
 
 test('a cart without a picked slot asks for one, rather than naming Picnic\'s guess', () => {
@@ -475,7 +502,7 @@ test('a cart without a picked slot asks for one, rather than naming Picnic\'s gu
   }));
 
   assert.strictEqual(headline(), 'Pick a delivery slot');
-  assert.strictEqual(detail(), 'tomorrow 3/12 free, first 08:30');
+  assert.strictEqual(detail(), 'tomorrow 3/12 free · first 08:30–09:30');
 });
 
 test('a cart without a slot and below the minimum says how much is missing underneath', () => {
@@ -488,6 +515,55 @@ test('a cart without a slot and below the minimum says how much is missing under
   assert.strictEqual(nodes.meta.textContent, '1 product · €28.20');
   assert.strictEqual(noteOf(nodes), '€6.80 short of the minimum');
   assert.strictEqual(nodes.note.dataset.tone, 'warn');
+});
+
+test('a cart without a slot and below the minimum names the free slots in two parts, the second giving way to the note', () => {
+  const { nodes, adopt } = harness();
+
+  adopt(payload({ orderStatus: '', cart: cart({ totalPrice: 28.2, productCount: 1, minimumOrderValue: 35, slot: null, nextSlots: NEXT }), now: '2026-07-28T10:00:00.000+02:00' }));
+
+  // the first slot is what a half width tile hides under a note, as it does
+  // the amount in the cart: what is free goes on its own line
+  assert.strictEqual(nodes.when.textContent, 'tomorrow 3/12 free');
+  assert.strictEqual(nodes.what.textContent, 'first 08:30–09:30');
+  assert.strictEqual(nodes.detail.dataset.note, 'shown');
+  assert.strictEqual(noteOf(nodes), '€6.80 short of the minimum');
+});
+
+test('an order days out has its window on its own for a half width tile with a note, the countdown naming the day', () => {
+  const { nodes, adopt, headline, detail } = harness();
+
+  adopt(payload({
+    orderStatus: 'groceries_ordered',
+    etaStart: '2026-07-30T16:00:00.000+02:00',
+    etaEnd: '2026-07-30T17:00:00.000+02:00',
+    cutOffAt: '2026-07-29T23:00:00.000+02:00',
+    now: '2026-07-28T16:00:00.000+02:00'
+  }, { day: 'Thu 30 Jul', cutOffLabel: 'Wed 29 Jul 23:00' }));
+
+  assert.strictEqual(headline(), 'Delivery in 2 days');
+  assert.strictEqual(detail(), 'Thu 30 Jul 16:11–16:31');
+  assert.strictEqual(nodes['when-short'].textContent, '16:11–16:31');
+  assert.strictEqual(nodes.detail.dataset.note, 'shown');
+});
+
+test('an order counted down in hours has its window on its own as well, which "tomorrow" would take onto a second line', () => {
+  const { nodes, adopt, headline, detail } = harness();
+
+  adopt(payload(Object.assign({ orderStatus: 'groceries_ordered', cutOffAt: '2026-07-28T13:00:00.000+02:00', now: '2026-07-28T10:00:00.000+02:00' }, WINDOW), { day: 'tomorrow' }));
+
+  assert.strictEqual(headline(), 'Delivery in 6 hours');
+  assert.strictEqual(detail(), 'tomorrow 16:11–16:31');
+  assert.strictEqual(nodes['when-short'].textContent, '16:11–16:31');
+});
+
+test('a window that is not counted down to keeps its day', () => {
+  const { nodes, adopt, headline } = harness();
+
+  adopt(payload(Object.assign({ now: '2026-07-28T16:16:00.000+02:00' }, UNDERWAY)));
+
+  assert.strictEqual(headline(), 'Any minute now');
+  assert.strictEqual(nodes['when-short'].textContent, '');
 });
 
 test('a cart that can no longer be added to an order is not held over the reader', () => {
@@ -515,8 +591,61 @@ test('no countdown on the widget is ever finer than a minute', () => {
   assert.strictEqual(seconds, null);
 });
 
-test('the widget no longer does anything when tapped', () => {
-  assert.strictEqual(/popup|hapticFeedback|addEventListener\('click'/.test(script), false);
+test('a widget that opens has Picnic asked straight away, next to showing what the app has', () => {
+  const { calls, nodes } = harness();
+
+  assert.deepStrictEqual(calls, ['GET /state', 'POST /refresh']);
+  // the mark breathes while it waits
+  assert.strictEqual(nodes.tile.dataset.refreshing, 'yes');
+});
+
+test('a tap has Picnic asked and buzzes, but not twice in half a minute', () => {
+  const { calls, nodes, buzzes } = harness();
+  const tap = nodes.tile.listeners.click;
+  const opened = Date.now;
+
+  try {
+    // half a minute after opening, a tap asks again
+    Date.now = () => opened() + 31 * 1000;
+    tap();
+    assert.deepStrictEqual(calls.filter(call => call == 'POST /refresh').length, 2);
+    assert.strictEqual(buzzes.length, 1);
+
+    // and a tap right after it is left alone, buzz and all
+    tap();
+    assert.deepStrictEqual(calls.filter(call => call == 'POST /refresh').length, 2);
+    assert.strictEqual(buzzes.length, 1);
+  } finally {
+    Date.now = opened;
+  }
+});
+
+test('coming back into view has Picnic asked, going out of it does not', () => {
+  const { calls, page } = harness();
+  const opened = Date.now;
+
+  try {
+    Date.now = () => opened() + 31 * 1000;
+
+    page.hidden = true;
+    page.listeners.visibilitychange();
+    assert.strictEqual(calls.filter(call => call == 'POST /refresh').length, 1);
+
+    page.hidden = false;
+    page.listeners.visibilitychange();
+    assert.strictEqual(calls.filter(call => call == 'POST /refresh').length, 2);
+  } finally {
+    Date.now = opened;
+  }
+});
+
+test('an answer older than what is on screen is not shown over it', () => {
+  const { adopt, headline } = harness();
+
+  adopt(payload({ orderStatus: '', cart: cart(), now: '2026-07-29T22:20:00.000+02:00' }));
+  adopt(payload({ orderStatus: '', cart: { totalPrice: 0, productCount: 0 }, now: '2026-07-29T22:19:00.000+02:00' }));
+
+  assert.strictEqual(headline(), 'Order within 40 min');
 });
 
 test('every word the widget asks for is one the app hands over', () => {
@@ -662,11 +791,54 @@ test('nothing planned says when something could be, on a line of its own', () =>
 
   adopt(payload({ orderStatus: '', cart: { totalPrice: 0, productCount: 0, nextSlots: NEXT }, now: '2026-07-28T16:40:00.000+02:00' }));
 
-  assert.strictEqual(headline(), 'Nothing planned');
+  assert.strictEqual(headline(), 'No pending order');
   assert.strictEqual(detail(), 'Your cart is empty');
-  assert.strictEqual(noteOf(nodes), 'Slots tomorrow: 3 of 12 free / First at 08:30');
-  assert.strictEqual(shortNoteOf(nodes), 'tomorrow 3/12 free, first 08:30');
+  // the first slot by its window, which is what gets booked
+  assert.strictEqual(noteOf(nodes), 'Slots tomorrow: 3 of 12 free / First slot 08:30–09:30');
+  assert.strictEqual(shortNoteOf(nodes), 'tomorrow 3/12 free / first 08:30–09:30');
   assert.strictEqual(nodes.note.dataset.tone, '');
+});
+
+// an empty cart with a slot picked for tomorrow afternoon, which can be
+// ordered for until 23:00 tonight
+function emptyWithSlot() {
+  return {
+    totalPrice: 0,
+    productCount: 0,
+    slot: { chosen: true, windowStart: '2026-07-29T14:30:00.000+02:00', windowEnd: '2026-07-29T15:30:00.000+02:00', cutOffAt: '2026-07-28T23:00:00.000+02:00' },
+    nextSlots: NEXT
+  };
+}
+
+test('an empty cart with a slot picked names that slot rather than the free ones', () => {
+  const { nodes, adopt, headline, detail } = harness();
+
+  adopt(payload({ orderStatus: '', cart: emptyWithSlot(), now: '2026-07-28T16:40:00.000+02:00' }));
+
+  assert.strictEqual(headline(), 'No pending order');
+  assert.strictEqual(detail(), 'Your cart is empty');
+  assert.strictEqual(noteOf(nodes), 'Chosen slot: tomorrow 14:30–15:30 / Order before 23:00');
+  // on a line each on a half width tile, so the deadline is never cut off
+  assert.strictEqual(shortNoteOf(nodes), 'tomorrow 14:30–15:30 / Order before 23:00');
+  assert.strictEqual(nodes['note-short-lines'].dataset.lines, '2');
+  assert.strictEqual(nodes.note.dataset.tone, '');
+});
+
+test('the last hour to order for a picked slot is counted down', () => {
+  const { nodes, adopt } = harness();
+
+  adopt(payload({ orderStatus: '', cart: emptyWithSlot(), now: '2026-07-28T22:20:00.000+02:00' }));
+
+  assert.strictEqual(noteOf(nodes), 'Chosen slot: tomorrow 14:30–15:30 / Order within 40 min');
+  assert.strictEqual(nodes.note.dataset.tone, 'warn');
+});
+
+test('a first slot without an end is named by its start', () => {
+  const { nodes, adopt } = harness();
+
+  adopt(payload({ orderStatus: '', cart: { totalPrice: 0, productCount: 0, nextSlots: Object.assign({}, NEXT, { windowEnd: null }) }, now: '2026-07-28T16:40:00.000+02:00' }));
+
+  assert.strictEqual(noteOf(nodes), 'Slots tomorrow: 3 of 12 free / First at 08:30');
 });
 
 test('the state\'s icon sits in front of its name, and on its own where there is no name', () => {

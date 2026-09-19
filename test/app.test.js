@@ -84,7 +84,10 @@ async function boot(picnic) {
 
   app.utils.getOrderStatus = async () => JSON.stringify(picnic.summary());
   app.utils.getCart = async () => JSON.stringify(picnic.cart());
-  app.utils.getDelivery = async () => JSON.stringify({});
+  app.utils.getDelivery = async () => JSON.stringify(picnic.delivery ? picnic.delivery() : {});
+  // nothing paid yet, unless the test says so
+  app.utils.getWalletTransactions = async () => JSON.stringify(picnic.payments ? picnic.payments().map(payment => ({ id: payment.id, amount_in_cents: payment.amount_in_cents })) : []);
+  app.utils.getWalletTransaction = async id => JSON.stringify((picnic.payments ? picnic.payments() : []).find(payment => payment.id == id) || {});
   // no van assigned yet: Picnic answers with nothing
   app.utils.getDeliveryPosition = async () => "";
 
@@ -188,6 +191,127 @@ test('Picnic is not asked about orders again within five minutes', async () => {
 
   try {
     assert.strictEqual(asked, before);
+  } finally {
+    await stop(app);
+  }
+});
+
+// Groceries that came ten minutes ago: 53,43 on the order, a can and a bag
+// handed back to the driver.
+function justDelivered(settings) {
+  settings["delivery_id"] = "d1";
+  settings["delivery_eta_start"] = iso(-20 * MINUTE);
+  settings["delivery_eta_end"] = iso(0);
+  settings["delivery_time"] = iso(-10 * MINUTE);
+}
+
+function deliveredOrder() {
+  return {
+    delivery_id: "d1",
+    delivery_time: { start: iso(-10 * MINUTE), end: iso(-9 * MINUTE) },
+    orders: [{ checkout_total_price: 5343, total_deposit: 15 }],
+    returned_containers: [
+      { type: "CAN", localized_name: "1 x blikje", quantity: 1, price: 15 },
+      { type: "BAG", localized_name: "Tasjes", quantity: 1, price: 39 }
+    ]
+  };
+}
+
+test('a delivery comes to what was ordered less the deposit that went back, until Picnic has settled it', async () => {
+  const { app, settings } = await boot({ summary: () => [], cart: emptyCart, delivery: deliveredOrder });
+  justDelivered(settings);
+
+  await app.getDeliveryWidgetState();
+  await settle();
+  const state = await app.getDeliveryWidgetState();
+
+  try {
+    assert.strictEqual(state.state, "delivered");
+    assert.strictEqual(state.price, 52.89);
+    assert.deepStrictEqual(state.deposit.containers, [{ name: "blikje", quantity: 1 }, { name: "Tasjes", quantity: 1 }]);
+  } finally {
+    await stop(app);
+  }
+});
+
+test('a settled delivery comes to what was taken from the account, refunds and all', async () => {
+  const payments = [
+    // the newest payment is for something else, the one after it for this delivery
+    { id: "t3", amount_in_cents: -1250, delivery_id: "d9", transaction_status: "SUCCEEDED" },
+    { id: "t2", amount_in_cents: -5189, delivery_id: "d1", transaction_status: "SUCCEEDED" }
+  ];
+  const { app, settings } = await boot({ summary: () => [], cart: emptyCart, delivery: deliveredOrder, payments: () => payments });
+  justDelivered(settings);
+
+  await app.getDeliveryWidgetState();
+  await settle();
+  const state = await app.getDeliveryWidgetState();
+
+  try {
+    assert.strictEqual(state.price, 51.89);
+    assert.strictEqual(app._charge.transactionId, "t2");
+  } finally {
+    await stop(app);
+  }
+});
+
+test('the wallet is not asked about an order that has not been delivered', async () => {
+  var asked = 0;
+  const { app } = await boot({ summary: placedOrder, cart: emptyCart, payments: () => { asked++; return []; } });
+
+  await app.getDeliveryWidgetState();
+  await settle();
+
+  try {
+    assert.strictEqual(asked, 0);
+  } finally {
+    await stop(app);
+  }
+});
+
+test('a widget asking for it fresh has the cart fetched once it is half a minute old, and gets it in the answer', async () => {
+  var cart = emptyCart();
+  var asked = 0;
+  const { app } = await boot({ summary: () => [], cart: () => { asked++; return cart; } });
+
+  // what the widget last saw: an empty cart, fetched a minute ago
+  await app.getDeliveryWidgetState();
+  await settle();
+  app._cart["refreshedAt"] = Date.now() - 60 * 1000;
+  const before = asked;
+
+  // then the cart is filled in Picnic's app
+  cart = { total_price: 3286, checkout_total_price: 3286, total_count: 18, items: [] };
+
+  try {
+    // five minutes have not passed, so an ordinary answer does not ask
+    assert.strictEqual((await app.getDeliveryWidgetState()).state, "empty");
+    assert.strictEqual(asked, before);
+
+    // a fresh one does, and waits for it
+    assert.strictEqual((await app.refreshDeliveryWidgetState()).state, "cart");
+    assert.strictEqual(asked, before + 1);
+
+    // and within half a minute of that, Picnic is left alone however often
+    // it is asked for fresh
+    await app.refreshDeliveryWidgetState();
+    await app.refreshDeliveryWidgetState();
+    assert.strictEqual(asked, before + 1);
+  } finally {
+    await stop(app);
+  }
+});
+
+test('a widget asking for it fresh has orders asked about once they are half a minute old', async () => {
+  var asked = 0;
+  const { app, settings } = await boot({ summary: () => { asked++; return []; }, cart: emptyCart });
+
+  settings["order_checked_at"] = new Date(Date.now() - 60 * 1000).toISOString();
+  const before = asked;
+
+  try {
+    await app.refreshDeliveryWidgetState();
+    assert.strictEqual(asked, before + 1);
   } finally {
     await stop(app);
   }

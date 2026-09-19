@@ -37,15 +37,16 @@ the wall is good at telling you: when the groceries turn up.
   counting down towards it, and once Picnic announces the twenty minute
   delivery window, towards that
 - Once the van is on the road, and only then, it says the groceries are on
-  their way, with a bar that fills from the moment the van left until Picnic's
-  live window, which is what the countdown is to by then
+  their way, counting down to Picnic's live window, with a bar that fills from
+  the moment the van left until the end of that window
 - During the window it says the groceries are arriving, after it that Picnic is
   running late and by how much, and afterwards the time they were delivered.
   Four hours later the delivery makes way for whatever is in your cart by then
 - Once Picnic has counted what went back with the driver, the delivered order
   says what came back in deposit, and in what
 - The amount of the order is shown alongside it, which can be turned off in the
-  widget's settings
+  widget's settings. Once Picnic has settled a delivery, the amount is what was
+  taken from your account: the order less refunds and the deposit that went back
 - While an order can still be added to, the widget says until when. In the last
   hour before it closes that becomes a countdown in minutes. Picnic closes an
   order at 13:00 the day before a morning delivery and at 23:00 the day before
@@ -61,10 +62,15 @@ the wall is good at telling you: when the groceries turn up.
   down in minutes over the last hour
 - With nothing planned, and with a cart that has no slot, it says when
   something could be delivered: how many of the next day's slots are still
-  open, and when the first of those is
+  open, and the window of the first of those. A slot you picked while your
+  basket is still empty is shown instead, with the deadline to order by
 - A late delivery says how many minutes late it is
 - When the app has not been able to reach Picnic in over a day, the widget says
   so and when it last heard, rather than passing off what it knew as news
+- It has Picnic asked for the latest when it opens, when it comes back into
+  view and when you tap it, so a cart filled in Picnic's app shows within
+  seconds. Picnic is asked at most once every half minute however often that
+  happens, and otherwise every five minutes while a dashboard shows the widget
 
 Picnic's mark sits at the top left of every tile, the state's icon and name
 next to it, and each colour means one thing: red is Picnic and a cart still to

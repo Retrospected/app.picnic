@@ -16,6 +16,7 @@ const { parsePosition } = require('./lib/positionresponse.js');
 const POSITION_LOOKOUT = 3 * 60 * 60 * 1000;
 const POSITION_MAX_AGE = 60 * 1000;
 const { parseDelivery } = require('./lib/deliveryresponse.js');
+const { parseTransactions, parseTransaction } = require('./lib/walletresponse.js');
 const cutoff = require('./lib/cutoff.js');
 const { PICNIC_AGENT, PICNIC_DID } = require('./lib/picnicheaders.js');
 const twofactor = require('./lib/twofactor.js');
@@ -41,6 +42,21 @@ const CART_MAX_AGE = 1000 * 60 * 5 // 5 minutes
 // date. Only asked for while the widget shows that delivery, which is a few
 // hours, and the deposit coming back is the one thing in it that changes.
 const DELIVERY_MAX_AGE = 1000 * 60 * 10 // 10 minutes
+
+// How old the cart and the orders may be when a widget asks for them fresh:
+// one that just came into view, or that someone tapped. It is also how often
+// that gets to have Picnic asked, however many dashboards and taps there are.
+const FRESH_MAX_AGE = 1000 * 30 // 30 seconds
+
+// How long an answer asked for fresh waits for Picnic. Whatever comes later
+// is pushed to the widget like any other change.
+const FRESH_WAIT = 1000 * 4 // 4 seconds
+
+// How many of the newest payments are asked about to find the one for a
+// delivery that was just made. The wallet does not say which delivery a
+// payment was for until each is asked about, and the one wanted is the latest
+// or close to it.
+const WALLET_LOOKBACK = 3
 
 const DEBUG = false
 
@@ -465,6 +481,11 @@ class Picnic extends Homey.App {
 		const orderInHand = ["ordered", "announced", "underway", "arriving", "overdue", "delivered"].indexOf(state["state"]) != -1;
 		if (orderInHand && deliveryId) this._refreshDeliveryWhenStale(deliveryId);
 
+		// What was taken from the account for a delivery is only in the wallet,
+		// once Picnic has settled it: the order less what it refunded and less
+		// the deposit that went back.
+		if (state["state"] == "delivered" && deliveryId) this._refreshChargeWhenStale(deliveryId);
+
 		// The window Picnic announces is a plan, made the day before; the van
 		// leaving is what makes a delivery "on its way", and Picnic only says
 		// where the van is once there is one. From a few hours before the
@@ -486,6 +507,12 @@ class Picnic extends Homey.App {
 		const delivery = state["delivery"];
 		const details = this._delivery && this._delivery["deliveryId"] == deliveryId ? this._delivery : null;
 		const orderPrice = this.homey.settings.get("order_price");
+		const charged = this._charge && this._charge["deliveryId"] == deliveryId ? this._charge["amount"] : null;
+
+		// what the order in full says it costs when that is known: adding to
+		// an order places a second one in the same delivery, which the price
+		// stored when the first was placed knows nothing about
+		const ordered = details && details["totalPrice"] !== null ? details["totalPrice"] : (typeof orderPrice == 'number' ? orderPrice : null);
 
 		// Formatted here rather than in the widget: the times belong to the
 		// timezone Homey runs in, not to the one the browser showing the
@@ -504,11 +531,8 @@ class Picnic extends Homey.App {
 			"cutOffLabel": this._formatMoment(state["cutOffAt"], now),
 			// the price of an order the widget is not showing would be read as
 			// the price of whatever it is showing instead
-			// what the order in full says it costs when that is known: adding to
-			// an order places a second one in the same delivery, which the price
-			// stored when the first was placed knows nothing about
 			"price": !orderInHand ? null
-				: (details && details["totalPrice"] !== null ? details["totalPrice"] : (typeof orderPrice == 'number' ? orderPrice : null)),
+				: (state["state"] == "delivered" ? this._settledPrice(ordered, charged, delivery) : ordered),
 			"orderCount": orderInHand && details ? details["productCount"] : null,
 			"deposit": delivery ? {
 				"returned": delivery["depositReturned"],
@@ -530,11 +554,21 @@ class Picnic extends Homey.App {
 				} : null
 			} : null,
 			"cartKnown": state["cartKnown"],
+			// the slot picked for a cart that is still empty
+			"chosenSlot": state["chosenSlot"] ? {
+				"day": this.formatEtaDay(state["chosenSlot"]["windowStart"], now),
+				"window": this._formatWindow(state["chosenSlot"]["windowStart"], state["chosenSlot"]["windowEnd"]),
+				"cutOffAt": state["chosenSlot"]["cutOffAt"],
+				"cutOffTime": this.formatEtaTime(state["chosenSlot"]["cutOffAt"]),
+				"cutOffDay": this.formatEtaDay(state["chosenSlot"]["cutOffAt"], now),
+				"cutOffLabel": this._formatMoment(state["chosenSlot"]["cutOffAt"], now)
+			} : null,
 			// the next day something can be delivered on: how many of its slots
-			// are still open, and when the first of those is
+			// are still open, and when the first of those is, from and until
 			"nextSlots": next ? {
 				"day": this.formatEtaDay(next["windowStart"], now),
 				"time": this.formatEtaTime(next["windowStart"]),
+				"window": this._formatWindow(next["windowStart"], next["windowEnd"]),
 				"available": next["available"],
 				"total": next["total"]
 			} : null,
@@ -544,6 +578,48 @@ class Picnic extends Homey.App {
 			"locale": this._language(),
 			"labels": this._deliveryWidgetLabels()
 		};
+	}
+
+	// Everything the widget draws, as fresh as Picnic can make it, for a widget
+	// that has just come into view or that someone tapped: the cart and the
+	// orders are asked about unless that was done in the last half minute. A
+	// cart filled in Picnic's app a minute ago would otherwise wait up to five
+	// for the widget to see it.
+	async refreshDeliveryWidgetState() {
+		const before = await this.getDeliveryWidgetState();
+		const asked = [];
+
+		if (before["state"] == "empty" || before["state"] == "cart" || before["cutOffAt"]) {
+			asked.push(this._refreshCartWhenStale(FRESH_MAX_AGE));
+		}
+
+		if (orderCheckDue(before["state"], this.homey.settings.get("order_checked_at"), Date.now(), false, FRESH_MAX_AGE)) {
+			asked.push(this._refreshOrder());
+		}
+
+		const pending = asked.filter(Boolean);
+
+		if (pending.length > 0) {
+			var timer = null;
+			const waited = new Promise(resolve => { timer = setTimeout(resolve, FRESH_WAIT); });
+
+			await Promise.race([Promise.all(pending), waited]);
+			clearTimeout(timer);
+		}
+
+		return await this.getDeliveryWidgetState();
+	}
+
+	// What a delivery comes to once it has been made: what the wallet says was
+	// taken from the account when Picnic has settled it, and until then the
+	// order less the deposit that went back, once that has been counted. What
+	// Picnic refunds for products that did not come is only in the wallet.
+	_settledPrice(ordered, charged, delivery) {
+		if (charged !== null) return charged;
+		if (ordered === null) return null;
+
+		const returned = delivery && typeof delivery["depositReturned"] == 'number' ? delivery["depositReturned"] : 0;
+		return Math.round((ordered - returned) * 100) / 100;
 	}
 
 	_language() {
@@ -621,7 +697,8 @@ class Picnic extends Homey.App {
 			"cut-off-at", "cut-off-in", "cut-off-in-one", "cut-off-in-short",
 			"to-order-item", "to-order-items", "to-order-at", "to-order-in", "to-order-in-one",
 			"to-order-short-at", "to-order-short-in", "cart-amount",
-			"next-slots", "next-slots-first", "next-slots-short",
+			"next-slots", "next-slots-first", "next-slots-first-window", "next-slots-short", "next-slots-short-first",
+			"chosen-slot", "chosen-slot-before", "chosen-slot-within",
 			"late-by", "late-by-one", "late-short",
 			"deposit-returned", "deposit-pending"].forEach(key => {
 				labels[key] = this.homey.__("widget.delivery." + key);
@@ -694,20 +771,21 @@ class Picnic extends Homey.App {
 	// The cart, as far as the widget is concerned. Kept in memory rather than
 	// in the settings: it is a copy of something Picnic owns, and a stale one
 	// surviving a restart would be worse than not having it at all.
-	_refreshCartWhenStale() {
-		if (this._cartRefreshing === true) return;
-		if (this._cart !== undefined && this._cart !== null && Date.now() - this._cart["refreshedAt"] < CART_MAX_AGE) return;
+	//
+	// Answers with the request that is under way, for anyone who wants to wait
+	// for it, or with null when none is.
+	_refreshCartWhenStale(maxAge) {
+		if (this._cartRefreshing) return this._cartRefreshing;
+		if (this._cart !== undefined && this._cart !== null && Date.now() - this._cart["refreshedAt"] < (maxAge === undefined ? CART_MAX_AGE : maxAge)) return null;
 
 		// no token, or a sign-in Picnic is waiting for: asking would only
 		// produce the failure the settings page already reports
-		if (!this.homey.settings.get("x-picnic-auth") || this._picnicOutOfReach()) return;
+		if (!this.homey.settings.get("x-picnic-auth") || this._picnicOutOfReach()) return null;
 
-		this._cartRefreshing = true;
-
-		// deliberately not awaited: the widget is waiting for an answer, and
-		// the cart it does not have yet is worth less than a fast one. What
-		// comes back is pushed to it the same way any other change is.
-		this.utils.getCart()
+		// deliberately not awaited here: the widget is waiting for an answer,
+		// and the cart it does not have yet is worth less than a fast one.
+		// What comes back is pushed to it the same way any other change is.
+		this._cartRefreshing = this.utils.getCart()
 			.then(body => {
 				this._logResponse("GET /api/15/cart", body);
 
@@ -736,22 +814,25 @@ class Picnic extends Homey.App {
 				// true as far as the app knows, so this is not worth a crash
 				this._logProblem("Retrieving the cart", describeError(error));
 			})
-			.then(() => { this._cartRefreshing = false; }, () => { this._cartRefreshing = false; });
+			.then(() => { this._cartRefreshing = null; }, () => { this._cartRefreshing = null; });
+
+		return this._cartRefreshing;
 	}
 
 	// Asks Picnic about orders outside the poll's own schedule, on behalf of a
 	// widget that is being looked at. The poll does the work, so an order
 	// found this way fires its flows and is published like any other.
+	// Answers with the poll under way, or null when none could be started.
 	_refreshOrder() {
-		if (this._orderRefreshing === true) return;
-		if (!this.homey.settings.get("x-picnic-auth") || this._picnicOutOfReach()) return;
-
-		this._orderRefreshing = true;
+		if (this._orderRefreshing) return this._orderRefreshing;
+		if (!this.homey.settings.get("x-picnic-auth") || this._picnicOutOfReach()) return null;
 
 		// the poll settles either way, so the flag is always cleared
-		Promise.resolve(this.pollOrder())
+		this._orderRefreshing = Promise.resolve(this.pollOrder())
 			.catch(error => this._logProblem("Asking Picnic about orders", describeError(error)))
-			.then(() => { this._orderRefreshing = false; });
+			.then(() => { this._orderRefreshing = null; });
+
+		return this._orderRefreshing;
 	}
 
 	// The delivery that was just made, as far as the widget is concerned. In
@@ -793,6 +874,68 @@ class Picnic extends Homey.App {
 				this._logProblem("Retrieving the delivery", describeError(error));
 			})
 			.then(() => { this._deliveryRefreshing = false; }, () => { this._deliveryRefreshing = false; });
+	}
+
+	// What was taken from the account for the delivery that was just made, as
+	// far as the widget is concerned: in memory like the delivery itself. The
+	// wallet lists payments without saying what they were for, so the newest
+	// few are asked about until one turns out to be for this delivery, and
+	// that one is asked about again after, since a refund can still change it.
+	_refreshChargeWhenStale(deliveryId) {
+		if (this._chargeRefreshing === true) return;
+		if (this._charge && this._charge["deliveryId"] == deliveryId && Date.now() - this._charge["refreshedAt"] < DELIVERY_MAX_AGE) return;
+		if (!this.homey.settings.get("x-picnic-auth") || this._picnicOutOfReach()) return;
+
+		this._chargeRefreshing = true;
+
+		const known = this._charge && this._charge["deliveryId"] == deliveryId ? this._charge : null;
+
+		this._findCharge(deliveryId, known && known["transactionId"])
+			.then(found => {
+				// not settled yet is asked about again later, and not before; a
+				// payment that no longer reads as this delivery's keeps what it
+				// said, and the wallet is looked through again next time
+				this._charge = Object.assign({ "deliveryId": deliveryId, "amount": null }, found || (known ? { "amount": known["amount"] } : {}), {
+					"transactionId": found ? found["transactionId"] : null,
+					"refreshedAt": Date.now()
+				});
+				this._logProblem("Retrieving the payment", null);
+
+				if (found && (!known || known["amount"] !== found["amount"])) {
+					this.info("Picnic took " + found["amount"] + " for delivery " + deliveryId);
+					return this._publishDeliveryState();
+				}
+			})
+			.catch(async error => {
+				if (hasCode(error, SECOND_FACTOR_REQUIRED)) return await this._signInRequired();
+
+				// the widget goes on showing what the order came to
+				this._logProblem("Retrieving the payment", describeError(error));
+			})
+			.then(() => { this._chargeRefreshing = false; }, () => { this._chargeRefreshing = false; });
+	}
+
+	async _findCharge(deliveryId, transactionId) {
+		var candidates = transactionId ? [transactionId] : [];
+
+		if (candidates.length == 0) {
+			const body = await this.utils.getWalletTransactions();
+			this._logResponse("POST /api/15/wallet/transactions", body);
+
+			candidates = (parseTransactions(body) || []).slice(0, WALLET_LOOKBACK).map(transaction => transaction["id"]);
+		}
+
+		for (const id of candidates) {
+			const body = await this.utils.getWalletTransaction(id);
+			this._logResponse("GET /api/15/wallet/transactions/{id}", body);
+
+			const transaction = parseTransaction(body);
+			if (transaction && transaction["deliveryId"] == deliveryId) {
+				return { "transactionId": id, "amount": transaction["amount"] };
+			}
+		}
+
+		return null;
 	}
 
 	// The dashboard is not told to ask again, so a state change has to reach an

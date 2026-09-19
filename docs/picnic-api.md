@@ -69,6 +69,32 @@ nothing is running.
 | `orders[].total_deposit`, `orders[].deposit_breakdown[]` | deposit paid, `{ type: BAG\|DEFAULT, value, count }` |
 | `returned_containers[]` | `{ type, localized_name, quantity, price }`, filled in once the hub has counted what went back. **Unconfirmed**: whether `price` is per unit (as the app assumes) or per line |
 
+## Payments
+
+What was taken from the account for a delivery is not in the delivery: it is
+the order less what Picnic refunded for products that did not come and less
+the deposit that went back, and only the wallet has it. Neither call has been
+seen live yet; the shape is the one the TypeScript (`MRVDH/picnic-api`) and C#
+(`Jerome1998/Picnic.Api`) clients model.
+
+**`POST /wallet/transactions`**, body `{ "page_number": 1 }`: payments, newest
+first, as `{ id, amount_in_cents, status, timestamp, transaction_type, … }`.
+None of them says which delivery it was for.
+
+**`GET /wallet/transactions/{id}`**: one payment in full.
+
+| Field | Meaning |
+| --- | --- |
+| `delivery_id` | the delivery it was for |
+| `amount_in_cents` | what was taken. **Unconfirmed** whether it is written as positive or negative, so the app takes its size |
+| `transaction_status` | not known which values it takes |
+| `refunded_items[]`, `article_issue_refunds[]` | what was refunded; shape unknown |
+| `returned_containers[]`, `deposits[]` | as on the delivery |
+
+The app looks through the newest three payments for the one with the delivery's
+id, while the widget shows that delivery, and asks about that one payment from
+then on.
+
 ## Where the van is
 
 **`GET /deliveries/{id}/position`**: the van on its route. Not seen live yet;

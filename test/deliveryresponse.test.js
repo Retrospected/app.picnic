@@ -52,6 +52,19 @@ test('returned containers add up to the deposit that comes back', () => {
   ]);
 });
 
+test('a container named by a count of one is named without it, the widget says how many', () => {
+  const parsed = parseDelivery(delivery({
+    returned_containers: [
+      { type: "CAN", localized_name: "1 x blikje", quantity: 1, price: 15 },
+      { type: "BAG", localized_name: "Tasjes", quantity: 1, price: 39 },
+      { type: "CAN", localized_name: "6x Blikjes", quantity: 2, price: 90 }
+    ]
+  }));
+
+  // a pack of six is still a pack of six
+  assert.deepStrictEqual(parsed.returned.map(container => container.name), ["blikje", "Tasjes", "6x Blikjes"]);
+});
+
 test('a delivery without a delivery time has not arrived as far as this says', () => {
   assert.strictEqual(parseDelivery(delivery({ delivery_time: null })).deliveredAt, null);
 });
