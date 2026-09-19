@@ -1,0 +1,39 @@
+# Runs the tests and the App Store validation on every pull request, and on
+# master once something lands there. Neither needs a Homey or a Picnic account:
+# the tests stand in for both, and homey-lib validates the way the CLI does.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+# a newer push to the same pull request makes the run for the older one moot
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # the Node version the Homey app runner runs the app on
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # package-lock.json is not committed, so this resolves afresh each run
+      - run: npm install --no-audit --no-fund
+
+      - name: Tests
+        run: npm test
+
+      - name: Validate at App Store level
+        run: npm run validate
