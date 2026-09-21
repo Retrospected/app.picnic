@@ -979,7 +979,7 @@ class Picnic extends Homey.App {
 							const data = { 'price': price, 'eta_start': eta_start, 'eta_end': eta_end, 'eta_date': eta_date }
 
 							this.info("Firing the groceries ordered trigger, delivery on " + eta_date + " between " + eta_start + " and " + eta_end + ", price " + price)
-							this._groceriesOrderedTrigger.trigger(data)
+							await this._groceriesOrderedTrigger.trigger(data)
 
 							this.orderPrice.setValue(price)
 							this.orderStatus.setValue("groceries_ordered")
@@ -1009,7 +1009,7 @@ class Picnic extends Homey.App {
 							const tokens = this._etaTokens(orderEvent["eta2_start"], orderEvent["eta2_end"])
 
 							this.info("Firing the delivery announced trigger, window on " + tokens["eta_date"] + " between " + tokens["eta_start"] + " and " + tokens["eta_end"])
-							this._deliveryAnnouncedTrigger.trigger(tokens)
+							await this._deliveryAnnouncedTrigger.trigger(tokens)
 
 							this.orderStatus.setValue("delivery_announced")
 							this.orderDeliveryDate.setValue(tokens["eta_date"])
