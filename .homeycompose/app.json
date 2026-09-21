@@ -1,14 +1,14 @@
 {
   "id": "app.picnic",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "compatibility": ">=12.3.0",
   "sdk": 3,
   "name": {
     "en": "Picnic"
   },
   "description": {
-    "en": "Connect Picnic with Homey",
-    "nl": "Verbind Picnic met Homey"
+    "en": "Your home's grocery companion",
+    "nl": "De boodschappenhulp van je huis"
   },
   "category": [
     "internet"
