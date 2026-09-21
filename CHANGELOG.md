@@ -3,7 +3,7 @@
 All notable changes to the Picnic app for Homey, newest first. The short version of
 each release is what Homey shows in the app store, and lives in `.homeychangelog.json`.
 
-## Unreleased
+## 3.8.0
 
 - A "Delivery" widget for Homey Dashboards. An order that has been placed shows the day and the slot it will be delivered in and counts down towards it; once Picnic announces the delivery moment the countdown is to that window, with a bar that fills as the delivery draws near. During the window it says the groceries are arriving, after it that Picnic is running late, and once they have been delivered it says at what time, for the six hours after
 - The widget follows the app rather than the other way around: it is told about a new state as the poll finds it, counts the minutes down by itself in between, and counts them down on Homey's clock rather than on the clock of whatever is showing the dashboard
