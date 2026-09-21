@@ -5,21 +5,16 @@
   <meta charset="utf-8" />
   <style>
     /*
-     * Sizes, colours and spacing come from Homey's widget style library so the
-     * widget sits on a dashboard next to the built-in ones without looking
-     * imported, and follows the dashboard into dark mode by itself. Every
-     * variable has a fallback: a missing one would otherwise collapse the
-     * layout rather than merely change it.
+     * Styling from Homey's widget library keeps the widget looking native
+     * on the dashboard. Variables have fallbacks so missing values change
+     * the look, not break the layout. Dark mode works automatically.
      *
-     * Text keeps to the pairs of size, weight and line height the library
-     * allows, so it sits on the same scale as the text of Homey's own widgets.
-     * The one exception is the state's name, which is bold at the small size
-     * the way Picnic's app sets its labels.
+     * Text sizes and weights match Homey's scale. The state name is bold
+     * at small size, like Picnic's app.
      *
-     * One layout for every state, so a glance lands in the same place whatever
-     * the widget is saying: whose widget this is and what state it is in at
-     * the top, the one thing worth reading large at the bottom, with its
-     * detail and what to do about it underneath.
+     * Same layout for all states: the app and state at top, the main info
+     * in a large readable size at the bottom, with details underneath.
+     * Your eye always lands in the same spot.
      */
     body {
       margin: 0;
@@ -33,15 +28,10 @@
       flex-direction: column;
       font-variant-numeric: tabular-nums;
 
-      /* Picnic's own colours: its red, the green of its "Family" badge, the
-         lighter green of its "Naar de winkel" button for an order that is in
-         hand, and the yellow of its "Actie" one. Each comes as a fill and an
-         ink for text and icons on the widget itself, where the fill would not
-         always be readable.
-
-         Each colour means one thing: red is Picnic, and a cart that still
-         has to be ordered; the yellow's ink is a deadline within the hour;
-         green is an order in hand or delivered; grey is nothing at all. */
+      /* Picnic's brand colors: red for Picnic and unordered carts, green for
+         orders and deliveries, yellow for urgent deadlines (within the hour),
+         and grey for nothing to show. Each color has both a fill and a text/
+         icon color for readability. */
       --brand: #e40613;
       --brand-ink: #e40613;
       --good: #295813;
@@ -52,15 +42,13 @@
       --warn-ink: #8a6a00;
       --muted: var(--homey-text-color-light, #8a8a8a);
 
-      /* the one colour a state gives the widget, see STATES below, and how
-         much of it goes into the tint behind the state's name */
+      /* the color for this state and how saturated the tint behind the name is */
       --tone: var(--muted);
       --tone-ink: var(--muted);
       --tint: 14%;
     }
 
-    /* on a dark dashboard the inks are lifted until they read as text, and
-       the tints deepened until they show against the dark grey */
+    /* in dark mode, colors are lighter for readability and tints are deeper */
     .homey-dark-mode .tile {
       --brand-ink: #ff4b52;
       --good-ink: #7cc45a;
@@ -83,8 +71,7 @@
       min-width: 0;
     }
 
-    /* Whose widget this is: Picnic's app icon, its mark in white on its red,
-       where Homey's own widgets put the icon of the device they are about. */
+    /* Picnic app icon and badge */
     .logo,
     .badge {
       flex: none;
@@ -105,8 +92,7 @@
       fill: var(--homey-color-white, #ffffff);
     }
 
-    /* while Picnic is being asked on the widget's behalf, which is what a tap
-       does, its mark breathes: the tap arrived, and something is coming */
+    /* pulsing animation shows the tap was registered and a request is in flight */
     .tile[data-refreshing="yes"] .logo {
       animation: asking 1.2s ease-in-out infinite;
     }
@@ -122,8 +108,7 @@
       }
     }
 
-    /* The state's icon on its own, for a state that has no name to put in a
-       badge: the icon says what the widget is about instead. */
+    /* state icon badge (no text label, just the icon) */
     .badge {
       color: var(--tone-ink);
       background: rgba(128, 128, 128, 0.14);
@@ -144,10 +129,7 @@
       height: var(--homey-icon-size-regular, 16px);
     }
 
-    /* What the state is called, as a badge the way Picnic's app labels its
-       offers, with the state's icon in front of the word: a tint of the
-       state's colour under its ink, so the one saturated thing on the widget
-       is the mark. */
+    /* state name badge: icon on the left, tinted background, text in right color */
     .status {
       min-width: 0;
       display: inline-flex;
