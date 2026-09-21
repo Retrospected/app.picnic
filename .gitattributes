@@ -1,9 +1,8 @@
 * text=auto
-*.js text eol=lf
-*.json text eol=lf
-*.md text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.html text eol=lf
-*.css text eol=lf
-*.html text eol=lf
+*.js text eol=crlf
+*.json text eol=crlf
+*.md text eol=crlf
+*.yml text eol=crlf
+*.yaml text eol=crlf
+*.html text eol=crlf
+*.css text eol=crlf
