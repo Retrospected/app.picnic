@@ -1,0 +1,1055 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <style>
+    /*
+     * Styling from Homey's widget library keeps the widget looking native
+     * on the dashboard. Variables have fallbacks so missing values change
+     * the look, not break the layout. Dark mode works automatically.
+     *
+     * Text sizes and weights match Homey's scale. The state name is bold
+     * at small size, like Picnic's app.
+     *
+     * Same layout for all states: the app and state at top, the main info
+     * in a large readable size at the bottom, with details underneath.
+     * Your eye always lands in the same spot.
+     */
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .tile {
+      box-sizing: border-box;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-variant-numeric: tabular-nums;
+
+      /* Picnic's brand colors: red for Picnic and unordered carts, green for
+         orders and deliveries, yellow for urgent deadlines (within the hour),
+         and grey for nothing to show. Each color has both a fill and a text/
+         icon color for readability. */
+      --brand: #e40613;
+      --brand-ink: #e40613;
+      --good: #295813;
+      --good-ink: #295813;
+      --calm: #4b7f24;
+      --calm-ink: #4b7f24;
+      --warn: #f6d94a;
+      --warn-ink: #8a6a00;
+      --muted: var(--homey-text-color-light, #8a8a8a);
+
+      /* the color for this state and how saturated the tint behind the name is */
+      --tone: var(--muted);
+      --tone-ink: var(--muted);
+      --tint: 14%;
+    }
+
+    /* in dark mode, colors are lighter for readability and tints are deeper */
+    .homey-dark-mode .tile {
+      --brand-ink: #ff4b52;
+      --good-ink: #7cc45a;
+      --calm-ink: #8bcf5c;
+      --warn-ink: #f6d94a;
+      --tint: 24%;
+    }
+
+    .tile[data-tone="brand"] { --tone: var(--brand); --tone-ink: var(--brand-ink); }
+    .tile[data-tone="warn"] { --tone: var(--warn); --tone-ink: var(--warn-ink); --tint: 40%; }
+    .tile[data-tone="good"] { --tone: var(--good); --tone-ink: var(--good-ink); }
+    .tile[data-tone="calm"] { --tone: var(--calm); --tone-ink: var(--calm-ink); }
+
+    .homey-dark-mode .tile[data-tone="warn"] { --tint: 45%; }
+
+    .head {
+      display: flex;
+      align-items: center;
+      gap: var(--homey-su-2, 8px);
+      min-width: 0;
+    }
+
+    /* Picnic app icon and badge */
+    .logo,
+    .badge {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+    }
+
+    .logo {
+      background: var(--brand);
+    }
+
+    .logo svg {
+      width: 18px;
+      height: 18px;
+      fill: var(--homey-color-white, #ffffff);
+    }
+
+    /* pulsing animation shows the tap was registered and a request is in flight */
+    .tile[data-refreshing="yes"] .logo {
+      animation: asking 1.2s ease-in-out infinite;
+    }
+
+    @keyframes asking {
+      50% { opacity: 0.45; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tile[data-refreshing="yes"] .logo {
+        animation: none;
+        opacity: 0.6;
+      }
+    }
+
+    /* state icon badge (no text label, just the icon) */
+    .badge {
+      color: var(--tone-ink);
+      background: rgba(128, 128, 128, 0.14);
+      background: color-mix(in srgb, var(--tone) 18%, transparent);
+    }
+
+    .icon {
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .badge .icon {
+      width: var(--homey-icon-size-regular, 16px);
+      height: var(--homey-icon-size-regular, 16px);
+    }
+
+    /* state name badge: icon on the left, tinted background, text in right color */
+    .status {
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--homey-su-1, 4px);
+      padding: 1px var(--homey-su-2, 8px) 1px 6px;
+      border-radius: var(--homey-border-radius-small, 6px);
+      background: rgba(128, 128, 128, 0.14);
+      background: color-mix(in srgb, var(--tone) var(--tint), transparent);
+      color: var(--tone-ink);
+      font-size: var(--homey-font-size-small, 14px);
+      line-height: var(--homey-line-height-small, 20px);
+      font-weight: var(--homey-font-weight-bold, 700);
+      white-space: nowrap;
+    }
+
+    .status .icon {
+      flex: none;
+      width: var(--homey-icon-size-small, 14px);
+      height: var(--homey-icon-size-small, 14px);
+    }
+
+    .status .name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta {
+      margin-left: auto;
+      flex: none;
+      font-size: var(--homey-font-size-small, 14px);
+      line-height: var(--homey-line-height-small, 20px);
+      color: var(--muted);
+    }
+
+    .body {
+      margin-top: auto;
+      min-width: 0;
+    }
+
+    /* A number is read at a glance, so it is the large thing on the widget,
+       at the size the library keeps for numbers, and the words around it
+       ("in", "min") are set smaller beside it. */
+    /* The caption, then the number with its unit: one line where the tile is
+       wide enough, the caption on a line of its own above where it is not. */
+    .headline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: 0.3em;
+      min-width: 0;
+      color: var(--homey-text-color, inherit);
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    /* the number and its unit never part */
+    .figure {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.3em;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .value {
+      font-size: var(--homey-font-size-xxlarge, 32px);
+      line-height: var(--homey-line-height-xxlarge, 40px);
+      font-weight: var(--homey-font-weight-bold, 700);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* a number to hurry for is set in the colour for that */
+    .headline[data-value-tone="warn"] .value {
+      color: var(--warn-ink);
+    }
+
+    .unit {
+      flex: none;
+      font-size: var(--homey-font-size-default, 17px);
+      line-height: var(--homey-line-height-default, 24px);
+      font-weight: var(--homey-font-weight-medium, 500);
+      color: var(--muted);
+    }
+
+    /* what the number is, set like its unit: "Bezorging over 20 uur" */
+    .caption {
+      flex: none;
+      font-size: var(--homey-font-size-default, 17px);
+      line-height: var(--homey-line-height-default, 24px);
+      font-weight: var(--homey-font-weight-medium, 500);
+      color: var(--muted);
+    }
+
+    /* a sentence is read rather than glanced at, and may take two lines: it
+       is a short phrase that has to stand out, which is what the library
+       keeps its extra large text for */
+    .headline[data-kind="message"] .figure {
+      flex: 1 1 auto;
+    }
+
+    .headline[data-kind="message"] .value {
+      font-size: var(--homey-font-size-xlarge, 24px);
+      line-height: var(--homey-line-height-xlarge, 32px);
+      white-space: normal;
+      min-width: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .detail,
+    .note {
+      font-size: var(--homey-font-size-small, 14px);
+      line-height: var(--homey-line-height-small, 20px);
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* the shorter form of when, only ever used on a half width tile */
+    .detail .when-short {
+      display: none;
+    }
+
+    /* when and at what time, next to each other where there is room for it */
+    .when:not(:empty) + .what:not(:empty)::before {
+      content: " · ";
+    }
+
+    .track {
+      position: relative;
+      margin-top: var(--homey-su-3, 12px);
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    /* the empty part of the bar is drawn behind the fill rather than under
+       it: an opacity on the track would take the fill inside it down with it */
+    .track::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: currentColor;
+      opacity: 0.12;
+    }
+
+    .fill {
+      position: relative;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--tone-ink);
+      transition: width 0.4s ease-out;
+    }
+
+    .note {
+      margin-top: var(--homey-su-2, 8px);
+    }
+
+    /* two lines where the tile is wide enough, each keeping to its line */
+    .note .line {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note .short {
+      display: none;
+    }
+
+    /* something to hurry for is in the deadline's ochre, something good in
+       Picnic's green; red is kept for the cart that still has to be ordered */
+    .note[data-tone="warn"] { color: var(--warn-ink); }
+    .note[data-tone="good"] { color: var(--good-ink); }
+
+    /* A half width tile on a phone has room for one thing per line, so the
+       amount next to the status makes way for the status itself, and the
+       icon in front of the status's name for the name. */
+    @media (max-width: 239px) {
+      .meta {
+        display: none;
+      }
+
+      .head {
+        gap: var(--homey-su-1, 4px);
+      }
+
+      .logo,
+      .badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+      }
+
+      .logo svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      .badge .icon {
+        width: var(--homey-icon-size-small, 14px);
+        height: var(--homey-icon-size-small, 14px);
+      }
+
+      .status {
+        padding: 1px var(--homey-su-2, 8px);
+      }
+
+      .status .icon {
+        display: none;
+      }
+
+      /* and where there is not, underneath each other */
+      .detail {
+        white-space: normal;
+      }
+
+      .detail span {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .when:not(:empty) + .what:not(:empty)::before {
+        content: none;
+      }
+
+      /* the second part is the lesser one, and keeps to a line */
+      .detail .what {
+        -webkit-line-clamp: 1;
+      }
+
+      /* and gives way to a note, which says in its short form what is in the
+         cart: a window that takes two lines, the amount and the note would
+         not fit together */
+      .detail[data-note="shown"] .what {
+        display: none;
+      }
+
+      /* A tile has room for three lines under the number: a note of two
+         leaves one for when, so a when that has a shorter form takes it
+         there. For an order that is its window without the day, which the
+         countdown above it already pins down. */
+      .detail[data-note="shown"] .when-short:not(:empty) {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+      }
+
+      .detail[data-note="shown"] .when-short:not(:empty) + .when {
+        display: none;
+      }
+
+      .caption {
+        flex-basis: 100%;
+        font-size: var(--homey-font-size-small, 14px);
+        line-height: var(--homey-line-height-small, 20px);
+        font-weight: var(--homey-font-weight-regular, 400);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* a day next to the number would push the number out, so it moves up
+         into the caption: "Bestel vóór morgen" over "23:00" */
+      .caption[data-day]::after {
+        content: attr(data-day);
+      }
+
+      .unit[data-unit="day"] {
+        display: none;
+      }
+
+      /* a sentence gets a third line, and a size at which a long word fits */
+      .headline[data-kind="message"] .value {
+        font-size: var(--homey-font-size-default, 17px);
+        line-height: var(--homey-line-height-default, 24px);
+        -webkit-line-clamp: 3;
+      }
+
+      /* a half width tile has room for the short form of the note only */
+      .note .long {
+        display: none;
+      }
+
+      .note .short {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* unless it comes in two parts, each on a line of its own, so the
+         first running long cannot push the second out of sight */
+      .note .short[data-lines="2"] {
+        display: block;
+      }
+
+      .note .short[data-lines="2"] .part {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body class="homey-widget-full">
+  <!-- The icons, drawn once and used twice: in the badge of a state without
+       a name, and in front of the name of one that has it. -->
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="i-scheduled" viewBox="0 0 24 24"><circle cx="7" cy="7" r="5" /><path d="M7 4.6V7l1.6 1" /><path d="M12.5 9H16v8H3.5v-4.5" /><path d="M16 11h3.4l2.6 3.2V17h-6" /><circle cx="7.5" cy="18.3" r="1.9" /><circle cx="18" cy="18.3" r="1.9" /></symbol>
+    <symbol id="i-truck" viewBox="0 0 24 24"><path d="M2 6h13v11H2z" /><path d="M15 10h4l3 3.5V17h-7" /><circle cx="6.5" cy="18.3" r="1.9" /><circle cx="18" cy="18.3" r="1.9" /></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+    <symbol id="i-basket" viewBox="0 0 24 24"><path d="M6.5 10c0-3.6 2.5-6 5.5-6s5.5 2.4 5.5 6" /><path d="M2.5 10h19l-2.1 9.3a1.8 1.8 0 0 1-1.8 1.4H6.4a1.8 1.8 0 0 1-1.8-1.4Z" /></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 8v4" /><path d="M12 16h.01" /></symbol>
+    <!-- Picnic's mark, the letters of its app icon; the same file as assets/icon.svg -->
+    <symbol id="picnic-mark" viewBox="0 0 1417.3 1417.3"><path d="M417.9,995.6c0-5.2,0-7.7,0-10.2c0.2-55.1,0.4-110.1,0.8-165.2c0.1-18,0.9-36,1.6-54c0.5-12.6,3.4-17.1,15.8-17.4 c35.3-0.9,70.6-1.3,105.9-0.4c15.7,0.4,18,4.4,18.4,20.2c0.9,45,2.1,90.1,2.2,135.1c0.2,88.4-0.3,176.9-0.7,265.3 c-0.1,17.7-0.8,35.3-1.6,53c-0.6,13-4.6,17.7-17.7,17.9c-34.6,0.5-69.3,0.2-104,0.2c-9.6,0-15.7-5.1-20.6-13.3 c-42-69.7-84.4-139.1-126.7-208.7c-2.4-4-4.9-7.9-8.6-13.9c-0.3,5-0.5,7.7-0.5,10.4c-0.3,49.4-0.4,98.8-0.8,148.2 c-0.2,19.7-0.9,39.3-1.8,59c-0.6,13.4-4.2,17.8-17.6,18c-35,0.6-70,0.6-104.9,0c-13.6-0.2-17.4-5-17.5-19 c-0.6-131.8-1.1-263.6-1.5-395.4c-0.1-20,0.8-40,1.5-60c0.4-12.2,3-16.4,15.2-16.6c36.3-0.8,72.6-0.4,108.9-0.3 c8.2,0,13.2,4.7,17.2,11.6c43.8,76,87.8,151.8,131.8,227.6C413.8,989.8,415.2,991.5,417.9,995.6z"/><path d="M280,599.7c0,16.4,0.3,31.7-0.1,46.9c-0.4,17-2.8,21-19.3,21.5c-34,1-68,1.1-102,0c-16.8-0.5-18.9-4.2-19.1-21.5 c-0.8-74.7-1.7-149.4-2-224.2c-0.2-63.1,0.3-126.1,0.7-189.2c0.1-13.3,0.8-26.7,1.5-40c0.6-11.5,3.6-14.7,15.2-15.4 c67.3-4.3,134.6-6.7,201.9-1.6c40.4,3.1,79.7,11.6,116.5,29.6c62.2,30.4,93.6,81.8,101.1,149.3c3.9,35.1,2.5,70-8.1,104 C547,521.9,502.7,560,442.3,581.1c-50.2,17.5-102.2,21.2-154.8,19.1C285.9,600.1,284.2,600,280,599.7z M282.6,463.9 c34.4,1.9,67.7,3.2,100-7.8c32.8-11.2,49.7-35.4,49.6-69.5c-0.1-34.4-17-57.9-49.8-69.4c-24.7-8.6-50.4-9.1-76.1-8.9 c-7.9,0.1-15.7,0.7-23.7,1.1C282.6,361.3,282.6,412,282.6,463.9z"/><path d="M1099.7,1251.6c-66.8-1.9-128.2-18.3-179.9-62.5c-49.9-42.7-76.2-97.7-83.1-162.4c-5.4-50-0.4-98.8,20.2-145 c33.3-74.6,92.1-118.6,170.4-137.1c82.9-19.6,160.8-7.9,232,41.1c8.5,5.9,10.2,11.5,5.7,20.8c-15.2,31.4-32.8,61.2-56.1,87.2 c-10.3,11.4-10.9,11.1-24.3,3.6c-45.4-25.5-92.6-31.8-140.8-9.2c-46.1,21.6-69,68.1-62.2,122.2c6.1,48.4,40.6,86.5,88.3,97.2 c43.5,9.8,83.2-0.9,120.6-23.2c19.5-11.6,21-12.6,34,5.7c19.1,26.8,35.8,55.3,53.5,83.1c4.5,7,0,11-4.8,15 c-36.5,30.3-78.3,49.3-124.8,57.7C1132.3,1248.9,1115.9,1249.8,1099.7,1251.6z"/><path d="M834.6,427.3c0.9-72,19.4-132.9,66.9-182.8c38.7-40.6,86.8-63.6,141.4-73.4c76.5-13.7,148-1.7,213,42.5 c14.6,9.9,14.8,10.5,7.2,26.6c-14.3,30.3-32.1,58.5-54.3,83.7c-9.7,11.1-10.8,11-23.5,3.7c-37.8-21.5-77.9-29.9-120.3-17.9 c-77.5,21.9-98.5,97.7-76.5,157.6c17.3,47.1,64.2,76,117,73.9c33-1.3,62.4-12.6,90-29.9c11.9-7.5,15-7.4,23.9,2.7 c24.1,27.1,42.4,58.1,59,90.2c3.7,7.1-1,10.4-5.4,14.1c-29.6,24.8-62.9,43.2-100.4,51.9c-101.4,23.5-193.7,7.7-270.1-67.9 c-40-39.6-59.4-89.4-65.7-144.7C835.4,446.1,835.1,434.4,834.6,427.3z"/><path d="M635,377c0-57.7-0.4-115.5,0.2-173.2c0.3-26.8,3.2-29.3,30.5-29.5c31.3-0.2,62.7,0.7,94,1.3c10.3,0.2,15.6,5.2,15.8,16.3 c0.6,30.7,1.9,268.2,0.7,356.3c-0.4,28.3-3,30.4-31.5,30.5c-31,0.2-62-0.7-93-1.4c-10.3-0.2-15.6-5.3-15.8-16.3 C634.7,499.8,633.9,377,635,377z"/><path d="M705,836.3c18.6,0.8,36.6,1.2,54.5,2.6c12.5,1,15.2,4,15.7,16.1c1.2,30.3,3,60.6,2.9,90.9c-0.2,88-0.8,176.1-1.9,264.1 c-0.4,28.1-1.3,29.5-29,30.5c-31.6,1.2-63.3,0.2-94.9-0.7c-12.2-0.3-15.8-4.6-16.3-16.8c-1.2-32-2.6-63.9-2.9-95.9 c-0.5-58.7-0.5-117.4,0-176.1c0.3-32.3,2-64.6,2.8-96.9c0.2-10,5.4-14.6,14.8-15.1C669,837.9,687.3,837.2,705,836.3z"/><path d="M705.6,780.8c-40.6-0.1-72.8-32.7-72.6-73.4c0.3-39.9,33.1-72.2,73.2-71.9c39.8,0.3,72.4,33.3,72.2,73 C778.1,748.6,745.6,780.9,705.6,780.8z"/></symbol>
+  </svg>
+
+  <div class="tile homey-widget" id="tile">
+    <div class="head">
+      <span class="logo" aria-hidden="true"><svg><use href="#picnic-mark" /></svg></span>
+      <span class="badge" id="badge" aria-hidden="true"><svg class="icon"><use id="badge-icon" href="#i-basket" /></svg></span>
+      <span class="status" id="status-pill" hidden><svg class="icon" aria-hidden="true"><use id="status-icon" href="#i-basket" /></svg><span class="name" id="status"></span></span>
+      <span class="meta" id="meta"></span>
+    </div>
+
+    <div class="body">
+      <div class="headline" id="headline" aria-live="polite"><span class="caption" id="caption" hidden></span><span class="figure"><span class="value" id="value"></span><span class="unit" id="unit"></span></span></div>
+      <div class="detail" id="detail"><span class="when-short" id="when-short"></span><span class="when" id="when"></span><span class="what" id="what"></span></div>
+
+      <div class="track" id="track" hidden>
+        <div class="fill" id="fill"></div>
+      </div>
+
+      <div class="note" id="note" hidden><span class="long"><span class="line" id="note-first"></span><span class="line" id="note-second"></span></span><span class="short" id="note-short-lines"><span class="part" id="note-short"></span><span class="part" id="note-short-second"></span></span></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    // How often the app is asked again. It also says so itself the moment
+    // something changes, so this is the net underneath that rather than the
+    // way the widget finds out.
+    var REFRESH_INTERVAL = 30 * 1000;
+
+    // How often a widget has Picnic itself asked, rather than the app: when it
+    // comes into view and when it is tapped. The app keeps to the same limit
+    // for every widget on every dashboard together, so this only saves the
+    // widget asking for what it would not get.
+    var FRESH_INTERVAL = 30 * 1000;
+
+    // How often what is on screen is worked out again. Nothing here is ever
+    // counted down in seconds, so this only has to be often enough that the
+    // minute it shows is never noticeably behind the minute it is.
+    var TICK_INTERVAL = 20 * 1000;
+
+    // Below this, a deadline is close enough to hurry for and is counted down
+    // in minutes rather than named as a moment.
+    var URGENT_MINUTES = 60;
+
+    // What each state looks like: its colour, its icon and what it is called
+    // at the top. The words themselves come from the app, and are kept short
+    // enough to sit between the mark and the amount on a full width tile,
+    // and next to the mark alone on a half width one.
+    var STATES = {
+      // an order in hand is good news rather than something to act on, so it
+      // is green; red is kept for the cart that still has to be ordered.
+      // A pending order is one until the van leaves, however precise the
+      // window Picnic has announced for it; Picnic's own word for it is
+      // long, so it has a short form for where it does not fit.
+      'ordered': { tone: 'calm', icon: 'scheduled', status: 'ordered', short: 'ordered-short' },
+      'announced': { tone: 'calm', icon: 'scheduled', status: 'ordered', short: 'ordered-short' },
+      'underway': { tone: 'calm', icon: 'truck', status: 'underway' },
+      'arriving': { tone: 'calm', icon: 'truck', status: 'arriving' },
+      'overdue': { tone: 'warn', icon: 'clock', status: 'overdue' },
+      'delivered': { tone: 'good', icon: 'check', status: 'delivered' },
+      'cart': { tone: 'brand', icon: 'basket', status: 'cart' },
+      'empty': { tone: 'muted', icon: 'basket', status: null },
+      'signed_out': { tone: 'warn', icon: 'alert', status: null },
+      'stale': { tone: 'warn', icon: 'alert', status: null }
+    };
+
+    var homey = null;
+    var settings = {};
+    var state = null;
+
+    // when the widget last had Picnic asked, on this device's clock
+    var freshenedAt = 0;
+
+    // Homey's clock, minus the clock of whatever is showing the dashboard. A
+    // tablet running four minutes fast would otherwise count down to a minute
+    // that is not the one the app is working towards.
+    var clockOffset = 0;
+
+    function element(id) {
+      return document.getElementById(id);
+    }
+
+    function onHomeyReady(Homey) {
+      homey = Homey;
+      settings = Homey.getSettings() || {};
+
+      // the app announces a new state as soon as it has one, which is what
+      // makes an announcement show up on the dashboard while you look at it
+      Homey.on('delivery_state', adopt);
+
+      var shown = false;
+      var show = function () {
+        if (shown) return;
+        shown = true;
+        Homey.ready();
+      };
+
+      // whatever the first call does, the widget is not left hidden over it
+      setTimeout(show, 3000);
+      refresh().then(show, show);
+
+      // What the app has is shown straight away, and what Picnic says now
+      // after it: a dashboard opened after filling the cart in Picnic's app
+      // should show that cart, not the one from before.
+      freshen();
+
+      // Coming back into view is the same, whether from another app or from
+      // another dashboard, and a widget out of view does not ask at all.
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) freshen();
+      });
+
+      // A tap asks too, for anyone who wants to be sure, and says with a
+      // buzz that it did. A tap within half a minute of the last has nothing
+      // new to fetch, and is left alone.
+      element('tile').addEventListener('click', function () {
+        if (freshen() && typeof homey.hapticFeedback == 'function') homey.hapticFeedback();
+      });
+
+      setInterval(function () {
+        if (!document.hidden) refresh();
+      }, REFRESH_INTERVAL);
+      setInterval(render, TICK_INTERVAL);
+    }
+
+    // Has the app ask Picnic, and shows what comes back, unless that was done
+    // less than half a minute ago. Whether it asked.
+    function freshen() {
+      if (Date.now() - freshenedAt < FRESH_INTERVAL) return false;
+
+      freshenedAt = Date.now();
+      element('tile').dataset.refreshing = 'yes';
+
+      var done = function () { element('tile').dataset.refreshing = ''; };
+
+      Promise.resolve(homey.api('POST', '/refresh', {}))
+        .then(adopt, function (error) { console.error(error); })
+        .then(done, done);
+
+      return true;
+    }
+
+    function refresh() {
+      return homey.api('GET', '/state').then(adopt, function (error) {
+        // the state on screen is the last one the app confirmed, which beats
+        // replacing it with an error over a poll that will be tried again
+        console.error(error);
+      });
+    }
+
+    function adopt(data) {
+      if (!data || typeof data != 'object') return;
+
+      // Answers and announcements can arrive out of order: a quick one asked
+      // after a slow one that went to Picnic. What is older than what is on
+      // screen already has nothing to add.
+      if (state && Date.parse(data['now']) < Date.parse(state['now'])) return;
+
+      state = data;
+      clockOffset = Date.parse(data['now']) - Date.now();
+      if (isNaN(clockOffset)) clockOffset = 0;
+
+      render();
+    }
+
+    // The widget's idea of what time it is, which is Homey's.
+    function now() {
+      return Date.now() + clockOffset;
+    }
+
+    function label(key) {
+      return (state && state['labels'] && state['labels'][key]) || '';
+    }
+
+    // The labels arrive as sentences with __n__, __t__ and __a__ in them,
+    // because the number, the moment or the amount to put in is only known
+    // here: the app is not asked anything while the minutes tick away.
+    function text(key, values) {
+      var filled = label(key);
+
+      for (var name in values) {
+        filled = filled.replace('__' + name + '__', String(values[name]));
+      }
+
+      return filled;
+    }
+
+    function isAmount(value) {
+      return typeof value == 'number' && isFinite(value);
+    }
+
+    function money(amount) {
+      try {
+        return new Intl.NumberFormat((state && state['locale']) || undefined, { style: 'currency', currency: 'EUR' }).format(amount);
+      } catch (exception) {
+        return '€ ' + amount.toFixed(2);
+      }
+    }
+
+    function showPrices() {
+      return settings['show_price'] !== false;
+    }
+
+    function products(count) {
+      return isAmount(count) && count > 0 ? text(count == 1 ? 'item' : 'items', { n: count }) : '';
+    }
+
+    // Minutes until a moment, rounded up so nothing happens "in 0 min", or
+    // null once it has passed.
+    function minutesUntil(target) {
+      var left = Date.parse(target) - now();
+      if (isNaN(left) || left <= 0) return null;
+      return Math.ceil(left / 60000);
+    }
+
+    // Whole minutes since a moment, or null while it is still ahead or has
+    // been for less than a minute: there is nothing to say about that yet.
+    function minutesSince(target) {
+      var gone = now() - Date.parse(target);
+      if (isNaN(gone) || gone < 60000) return null;
+      return Math.floor(gone / 60000);
+    }
+
+    // How long is left, in the largest unit that still says something useful,
+    // as the number and the words around it. Minutes are the smallest unit on
+    // here: a dashboard is read in passing, and seconds ticking away would be
+    // movement without information.
+    function remaining(target) {
+      var minutes = minutesUntil(target);
+      if (minutes === null) return { value: label('now'), kind: 'message' };
+
+      var left = Date.parse(target) - now();
+      var hours = Math.round(left / 3600000);
+      var days = Math.round(left / 86400000);
+
+      var amount = minutes < 60 ? minutes : (hours < 24 ? hours : days);
+      var unit = minutes < 60 ? 'minute' : (hours < 24 ? 'hour' : 'day');
+
+      return { caption: label('delivery-in'), value: String(amount), unit: label(amount == 1 ? unit : unit + 's'), kind: 'countdown' };
+    }
+
+    // The note under a placed order, which can still be added to until its
+    // deadline. It comes in two forms: two lines where the tile is wide enough,
+    // one short one on a half width tile, and the page shows whichever fits.
+    //
+    // Something in the cart while the order is open has yet to be put on it,
+    // which is a thing left undone with a deadline on it, so it is said first
+    // and in the colour to hurry in. Without a cart the deadline speaks for
+    // itself, in that colour only over its last hour.
+    function orderNote(data) {
+      var minutes = minutesUntil(data['cutOffAt']);
+      if (minutes === null) return null;
+
+      var urgent = minutes <= URGENT_MINUTES;
+      var moment = data['cutOffLabel'];
+      var cart = data['cart'];
+      var count = cart && isAmount(cart['productCount']) ? cart['productCount'] : 0;
+
+      if (count > 0) {
+        return {
+          first: text(count == 1 ? 'to-order-item' : 'to-order-items', { n: count }),
+          second: urgent
+            ? text(minutes == 1 ? 'to-order-in-one' : 'to-order-in', { n: minutes })
+            : text('to-order-at', { t: moment }),
+          short: urgent
+            ? text('to-order-short-in', { c: products(count), n: minutes })
+            : text('to-order-short-at', { c: products(count), t: moment }),
+          tone: 'warn'
+        };
+      }
+
+      return {
+        first: urgent
+          ? text(minutes == 1 ? 'cut-off-in-one' : 'cut-off-in', { n: minutes })
+          : text('cut-off-at', { t: moment }),
+        short: urgent ? text('cut-off-in-short', { n: minutes }) : text('cut-off-at', { t: moment }),
+        tone: urgent ? 'warn' : null
+      };
+    }
+
+    // The next day something can be delivered on: how many of its slots are
+    // still open and when the first of those is, for a widget with nothing
+    // planned to say what could be. The first is named by its window, since
+    // that is what is booked, and by its start where its end is not known.
+    function slotsNote(next) {
+      if (!next || !next['day'] || !isAmount(next['available'])) return null;
+
+      var range = next['window'] && next['window'] != next['time'] ? next['window'] : '';
+      var values = { d: next['day'], a: next['available'], t: next['total'], h: range || next['time'] };
+
+      // the short form in two parts, how many are free and which is first,
+      // so that on a half width tile each keeps to a line, and the second can
+      // give way where there is no room for it
+      return {
+        first: text('next-slots', values),
+        second: text(range ? 'next-slots-first-window' : 'next-slots-first', values),
+        short: text('next-slots-short', values),
+        shortSecond: text('next-slots-short-first', values),
+        tone: null
+      };
+    }
+
+    // The slot someone picked for a cart that is still empty: when it is, and
+    // until when there is to fill the cart and order it, counted down in
+    // minutes over the last hour like any other deadline to order by.
+    function chosenSlotNote(slot) {
+      if (!slot || !slot['day']) return null;
+
+      var minutes = minutesUntil(slot['cutOffAt']);
+      if (minutes === null) return null;
+
+      var urgent = minutes <= URGENT_MINUTES;
+      // today goes without saying; any other day does not
+      var deadline = slot['cutOffDay'] && slot['cutOffDay'] != label('today') ? slot['cutOffLabel'] : slot['cutOffTime'];
+      var values = { d: slot['day'], w: slot['window'], t: deadline, n: minutes };
+
+      var deadlineLine = text(urgent ? 'chosen-slot-within' : 'chosen-slot-before', values);
+
+      return {
+        first: text('chosen-slot', values),
+        second: deadlineLine,
+        // a half width tile has no room for "chosen slot", but does for the
+        // slot and the deadline on a line each
+        short: [slot['day'], slot['window']].filter(Boolean).join(' '),
+        shortSecond: deadlineLine,
+        tone: urgent ? 'warn' : null
+      };
+    }
+
+    // A note that says one thing, the same on every tile.
+    function note(line, tone) {
+      return { first: line, short: line, tone: tone };
+    }
+
+    // What came back in deposit, once Picnic has counted it.
+    function containers(deposit) {
+      if (!deposit || !deposit['containers']) return '';
+
+      return deposit['containers']
+        .filter(function (container) { return container['name']; })
+        .map(function (container) { return container['quantity'] + '× ' + container['name']; })
+        .join(', ');
+    }
+
+    // Everything on screen, worked out before any of it is put there.
+    function view(data) {
+      var look = STATES[data['state']] || STATES['empty'];
+      var price = showPrices() && isAmount(data['price']) && data['price'] > 0 ? money(data['price']) : '';
+      // an order in hand: how much is in it, and what it costs
+      var order = [products(data['orderCount']), price].filter(Boolean).join(' · ');
+
+      var shown = {
+        tone: look.tone,
+        icon: look.icon,
+        status: look.status ? label(look.status) : '',
+        // what the name and the amount fall back to where the name does not
+        // fit next to the amount: the count goes first, then the name's length
+        statusShort: look.short ? label(look.short) : '',
+        meta: '',
+        metaShort: '',
+        kind: 'message',
+        // what the number is, above it
+        caption: '',
+        headline: '',
+        unit: '',
+        // the colour of the number, when it is one to hurry for
+        valueTone: null,
+        // a unit that is a day rather than a word like "min": a half width
+        // tile has no room for it next to the number and says it above
+        unitDay: '',
+        // the detail line: when, and what about it
+        when: '',
+        what: '',
+        // when, for a half width tile that also has a note to show and so
+        // has one line for it: what the headline does not already say
+        whenShort: '',
+        progress: null,
+        note: null
+      };
+
+      switch (data['state']) {
+        case 'ordered':
+        case 'announced':
+        case 'underway':
+          shown.meta = order;
+          shown.metaShort = price;
+          if (data['countdownTo']) {
+            var left = remaining(data['countdownTo']);
+            shown.kind = left.kind;
+            shown.caption = left.caption || '';
+            shown.headline = left.value;
+            shown.unit = left.unit || '';
+            // the countdown and the window's time only fit one day between
+            // them, so under a note the window can go without its day: a
+            // date, or "tomorrow" in English, takes it onto a second line
+            if (left.kind == 'countdown' && data['day'] && data['window']) shown.whenShort = data['window'];
+          } else {
+            shown.headline = label('ordered');
+          }
+          shown.when = [data['day'], data['window']].filter(Boolean).join(' ');
+          // what is in the cart and still has to go onto this order
+          var waiting = data['cart'];
+          shown.what = showPrices() && waiting && isAmount(waiting['totalPrice']) && waiting['totalPrice'] > 0 && data['cutOffAt']
+            ? text('cart-amount', { a: money(waiting['totalPrice']) })
+            : '';
+          shown.progress = data['progress'];
+          shown.note = orderNote(data);
+          break;
+
+        case 'arriving':
+        case 'overdue':
+          shown.meta = order;
+          shown.metaShort = price;
+          shown.headline = label('now');
+          shown.when = [data['day'], data['window']].filter(Boolean).join(' ');
+          shown.progress = data['progress'];
+          // how late is the question a late delivery raises, so it is answered
+          var late = data['state'] == 'overdue' ? minutesSince(data['windowEnd']) : null;
+          if (late !== null) {
+            shown.note = {
+              first: text(late == 1 ? 'late-by-one' : 'late-by', { n: late }),
+              short: text('late-short', { n: late }),
+              tone: 'warn'
+            };
+          }
+          break;
+
+        case 'delivered':
+          var deposit = data['deposit'];
+          shown.meta = order;
+          shown.kind = 'countdown';
+          // the badge already says "delivered", so the caption says when
+          shown.caption = text('delivered-caption', { d: data['day'] });
+          shown.headline = data['deliveredTime'];
+          shown.when = containers(deposit);
+          if (deposit && isAmount(deposit['returned']) && deposit['returned'] > 0) {
+            shown.note = note(text('deposit-returned', { t: money(deposit['returned']) }), 'good');
+          }
+          break;
+
+        case 'cart':
+          var cart = data['cart'] || {};
+          // a slot someone picked, and that can still be ordered for; the one
+          // Picnic suggests by itself is held for nobody, so it is not named
+          var slot = cart['slotChosen'] && cart['slot'] && cart['slot']['cutOffAt'] ? cart['slot'] : null;
+          var amount = showPrices() && isAmount(cart['totalPrice']) ? money(cart['totalPrice']) : '';
+          // what the cart is short of the slot's minimum, which has to be
+          // made up before it can be ordered at all
+          var short = showPrices() && isAmount(cart['minimumShort']) && cart['minimumShort'] > 0 ? cart['minimumShort'] : null;
+
+          shown.meta = [products(cart['productCount']), amount].filter(Boolean).join(' · ');
+
+          if (slot) {
+            // The cart is not an order until it has been through the checkout,
+            // and that has to happen before the slot's deadline. Below the
+            // minimum the shortfall comes first, since nothing can be ordered
+            // until it is made up, and the deadline goes under it; otherwise
+            // the deadline is the one thing on the widget to act on.
+            var minutes = minutesUntil(slot['cutOffAt']);
+            var urgent = minutes !== null && minutes <= URGENT_MINUTES;
+            // today goes without saying; any other day does not
+            var deadline = slot['cutOffDay'] && slot['cutOffDay'] != label('today') ? slot['cutOffLabel'] : slot['cutOffTime'];
+            shown.kind = 'countdown';
+            shown.when = [slot['day'], slot['window']].filter(Boolean).join(' ');
+
+            if (short !== null) {
+              shown.caption = label('minimum-caption');
+              shown.headline = money(short);
+              shown.what = urgent ? text('order-within-short', { n: minutes }) : text('order-before-short', { t: deadline });
+            } else if (urgent) {
+              shown.caption = label('order-within');
+              shown.headline = String(minutes);
+              shown.unit = label(minutes == 1 ? 'minute' : 'minutes');
+              shown.valueTone = 'warn';
+            } else {
+              shown.caption = label('order-before');
+              shown.headline = slot['cutOffTime'];
+              shown.unit = slot['cutOffDay'] && slot['cutOffDay'] != label('today') ? slot['cutOffDay'] : '';
+              shown.unitDay = shown.unit;
+            }
+          } else {
+            // without a slot the thing to do is pick one, and what there is to
+            // pick from is the next day with something open, in the short
+            // form: the long one is two lines, and the note may be taken
+            shown.headline = cart['slotClosed'] ? label('slot-closed') : label('pick-slot');
+            var open = slotsNote(data['nextSlots']);
+            if (open) {
+              shown.when = open.short;
+              shown.what = open.shortSecond;
+            }
+            if (short !== null) shown.note = note(text('minimum', { t: money(short) }), 'warn');
+          }
+          break;
+
+        case 'signed_out':
+          shown.headline = label('signed-out');
+          shown.when = label('signed-out-detail');
+          break;
+
+        case 'stale':
+          // what the app last heard is not repeated, only when it heard it
+          shown.headline = label('stale');
+          shown.when = data['checkedLabel'] ? text('stale-since', { t: data['checkedLabel'] }) : '';
+          break;
+
+        default:
+          shown.headline = label('empty');
+          shown.when = data['cartKnown'] ? label('empty-cart') : '';
+          // nothing ordered, but this is the slot picked for it, or failing
+          // that, when something could be delivered
+          shown.note = chosenSlotNote(data['chosenSlot']) || slotsNote(data['nextSlots']);
+      }
+
+      return shown;
+    }
+
+    function render() {
+      if (state === null) return;
+
+      var shown = view(state);
+
+      element('tile').dataset.tone = shown.tone;
+
+      // the icon sits in the badge when the state has no name, and in front
+      // of the name when it has one
+      var named = shown.status != '';
+      element('badge').hidden = named;
+      element('badge').dataset.icon = shown.icon;
+      element('badge-icon').setAttribute('href', '#i-' + shown.icon);
+      element('status-pill').hidden = !named;
+      element('status-pill').dataset.icon = shown.icon;
+      element('status-icon').setAttribute('href', '#i-' + shown.icon);
+      element('status').textContent = shown.status;
+      element('meta').textContent = shown.meta;
+
+      element('caption').textContent = shown.caption;
+      element('caption').hidden = shown.caption == '';
+      if (shown.unitDay) {
+        element('caption').dataset.day = ' ' + shown.unitDay;
+      } else {
+        delete element('caption').dataset.day;
+      }
+      element('value').textContent = shown.headline;
+      element('unit').textContent = shown.unit;
+      element('unit').hidden = shown.unit == '';
+      element('unit').dataset.unit = shown.unitDay ? 'day' : '';
+      element('headline').dataset.kind = shown.kind;
+      element('headline').dataset.valueTone = shown.valueTone || '';
+
+      element('when').textContent = shown.when;
+      element('when-short').textContent = shown.whenShort;
+      element('what').textContent = shown.what;
+      element('detail').hidden = shown.when == '' && shown.what == '';
+
+      var progress = shown.progress;
+      var known = typeof progress == 'number' && isFinite(progress);
+      element('track').hidden = !known;
+      element('fill').style.width = known ? Math.round(progress * 100) + '%' : '0%';
+
+      var said = shown.note;
+      element('note-first').textContent = said ? said.first : '';
+      element('note-second').textContent = said && said.second ? said.second : '';
+      element('note-second').hidden = !(said && said.second);
+      element('note-short').textContent = said ? (said.short || said.first) : '';
+      element('note-short-second').textContent = said && said.shortSecond ? said.shortSecond : '';
+      element('note-short-second').hidden = !(said && said.shortSecond);
+      element('note-short-lines').dataset.lines = said && said.shortSecond ? '2' : '1';
+      element('note').dataset.tone = said && said.tone ? said.tone : '';
+      element('note').hidden = !said;
+      element('detail').dataset.note = said ? 'shown' : '';
+
+      fit(shown);
+    }
+
+    // The name of the state and the amount share the top line with the mark,
+    // and not every name fits next to every amount. Measured rather than
+    // guessed, since the width of a tile and the width of a word are both
+    // only known here: a name that comes out cut off gives up the product
+    // count next to it first, and its own length after that.
+    function fit(shown) {
+      var name = element('status');
+      if (!(name.clientWidth > 0)) return;
+      if (name.scrollWidth <= name.clientWidth) return;
+
+      if (shown.metaShort && shown.metaShort != shown.meta) {
+        element('meta').textContent = shown.metaShort;
+        if (name.scrollWidth <= name.clientWidth) return;
+      }
+
+      if (shown.statusShort && shown.statusShort != shown.status) name.textContent = shown.statusShort;
+    }
+  </script>
+</body>
+
+</html>

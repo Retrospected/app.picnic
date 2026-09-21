@@ -1,0 +1,28 @@
+{
+  "name": {
+    "en": "Delivery",
+    "nl": "Bezorging"
+  },
+  "height": 188,
+  "settings": [
+    {
+      "id": "show_price",
+      "type": "checkbox",
+      "value": true,
+      "title": {
+        "en": "Show amounts",
+        "nl": "Toon bedragen"
+      }
+    }
+  ],
+  "api": {
+    "getState": {
+      "method": "GET",
+      "path": "/state"
+    },
+    "refresh": {
+      "method": "POST",
+      "path": "/refresh"
+    }
+  }
+}
