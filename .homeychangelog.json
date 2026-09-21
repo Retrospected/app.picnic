@@ -107,7 +107,7 @@
   "3.7.0": {
     "en": "If your Picnic account uses two-factor authentication, the app no longer has an SMS code sent every hour. A code is only sent when you log in on the app settings page yourself, and Homey tells you when that is needed."
   },
-  "3.8.0": {
+  "3.8.1": {
     "en": "Added a Delivery widget for Homey Dashboards showing order status, delivery window, and cart contents with live countdown and state updates"
   }
 }
