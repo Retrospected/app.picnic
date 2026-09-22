@@ -3,3 +3,6 @@
 /Makefile
 /VERIFICATION.md
 /docs/
+/.editorconfig
+/.editorconfig-checker.json
+/.github/
