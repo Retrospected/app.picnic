@@ -4,7 +4,7 @@
   "description": "Doing your groceries at Picnic via Homey.",
   "scripts": {
     "test": "node --test",
-    "lint": "node scripts/lint.js",
+    "lint": "editorconfig-checker",
     "validate": "node scripts/validate.js",
     "deps": "node scripts/deps.js",
     "prestart": "node scripts/deps.js",
@@ -39,7 +39,7 @@
   },
   "homepage": "https://github.com/Retrospected/app.picnic#readme",
   "devDependencies": {
-    "editorconfig": "^3.0.2",
+    "editorconfig-checker": "^6.2.0",
     "homey-lib": "^2.52.2"
   }
 }

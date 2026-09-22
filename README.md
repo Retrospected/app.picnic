@@ -184,8 +184,13 @@ LF line endings, a final newline, no trailing whitespace, two spaces to indent.
 Most editors read it as they are, the rest have an
 [EditorConfig plugin](https://editorconfig.org/#download), and nothing about it
 is tied to a particular editor or operating system. `npm run lint` checks the
-same rules, and CI runs it on every pull request, so a file that was written
-somewhere without the plugin is caught rather than argued about.
+same rules with
+[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker),
+which reads `.editorconfig` itself so nothing is written down twice, and CI
+runs it on every pull request, so a file that was written somewhere without the
+plugin is caught rather than argued about. `.editorconfig-checker.json` holds
+the two things the rules cannot say: the third party files in `settings/` are
+skipped, and the indent width is not enforced on continuation lines.
 
 Line endings are settled twice over: `.gitattributes` checks every text file
 out as LF on every platform, Windows included, so the same bytes are in every

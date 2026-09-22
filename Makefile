@@ -32,7 +32,7 @@ test: node_modules ## Run the tests
 	node --test
 
 lint: node_modules ## Check every file against .editorconfig
-	node scripts/lint.js
+	npx editorconfig-checker
 
 validate: node_modules ## Check the app the way the App Store does, without a Homey
 	node scripts/validate.js
