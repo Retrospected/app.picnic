@@ -1,9 +1,4 @@
 {
-  "Exclude": [
-    "^settings/angular\\.js$",
-    "^settings/bootstrap\\.css$",
-    "^settings/smart-table\\.min\\.js$"
-  ],
   "Disable": {
     "IndentSize": true
   }

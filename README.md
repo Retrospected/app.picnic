@@ -191,8 +191,10 @@ rules with
 which reads `.editorconfig` itself so nothing is written down twice, and CI
 runs it on every pull request, so a file that was written somewhere without the
 plugin is caught rather than argued about. `.editorconfig-checker.json` holds
-the two things the rules cannot say: the third party files in `settings/` are
-skipped, and the indent width is not enforced on continuation lines.
+the one thing `.editorconfig` cannot say: the indent width is not enforced,
+since the checker reads a continuation line as indentation and this code aligns
+them by hand. The third party files in `settings/` are left alone by the
+`unset` block at the bottom of `.editorconfig`.
 
 Line endings are settled twice over: `.gitattributes` checks every text file
 out as LF on every platform, Windows included, so the same bytes are in every
