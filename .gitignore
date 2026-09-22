@@ -5,4 +5,9 @@ testdata
 /.homeybuild/
 package-lock.json
 
-/.idea
+# Editor and IDE settings, which belong to you rather than to the repository.
+# What the repository has to say about formatting is in .editorconfig.
+/.idea/
+/.vscode/
+*.swp
+.DS_Store

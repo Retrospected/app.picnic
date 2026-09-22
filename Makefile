@@ -12,7 +12,7 @@ NPM ?= npm
 HOMEY ?= homey
 
 .DEFAULT_GOAL := help
-.PHONY: help run run-clean install test validate gallery previews homey-cli
+.PHONY: help run run-clean install test lint validate gallery previews homey-cli
 
 help: ## Say what is here
 	@echo "make <target>"
@@ -30,6 +30,9 @@ install: node_modules homey-cli ## Install the app on your Homey, where it stays
 
 test: node_modules ## Run the tests
 	node --test
+
+lint: node_modules ## Check every file against .editorconfig
+	node scripts/lint.js
 
 validate: node_modules ## Check the app the way the App Store does, without a Homey
 	node scripts/validate.js

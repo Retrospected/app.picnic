@@ -112,32 +112,38 @@ homey login
 Then, from a clone of this repository:
 
 ```
-make run
+npm start
 ```
 
 That is the whole thing. It installs the app's dependencies if they are not
-there and starts the app on your Homey, which runs until you stop it. `make` on
-its own lists the rest:
+there and starts the app on your Homey, which runs until you stop it.
+
+Everything else is an npm script too, so nothing here needs anything but Node
+and npm, on Windows, macOS or Linux alike:
 
 | | |
 | --- | --- |
-| `make run` | Run the app on your Homey, until you stop it |
-| `make run-clean` | Run it after deleting the stored data. See the warning below |
-| `make install` | Install the app on your Homey, where it stays after the CLI is closed |
-| `make test` | The unit tests, which need nothing but Node and no dependencies at all |
-| `make validate` | Validates the app the way the App Store does, without the CLI and without a Homey |
+| `npm start` | Run the app on your Homey, until you stop it |
+| `npm run start:clean` | Run it after deleting the stored data. See the warning below |
+| `npm run install:homey` | Install the app on your Homey, where it stays after the CLI is closed |
+| `npm test` | The unit tests, which need nothing but Node and no dependencies at all |
+| `npm run lint` | Check every file against [.editorconfig](.editorconfig) |
+| `npm run validate` | Validates the app the way the App Store does, without the CLI and without a Homey |
+| `npm run compose` | Regenerate `app.json` from `.homeycompose` and the widgets |
+| `npm run validate:cli` | The same validation, through the Homey CLI |
 
-All of it is there as npm scripts too: `npm start`, `npm run start:clean`,
-`npm run install:homey`, `npm test` and `npm run validate` do the same things,
-and `npm run compose` and `npm run validate:cli` are only there.
+If you have `make`, the same things are there as `make run`, `make run-clean`,
+`make install`, `make test`, `make lint` and `make validate`, and `make` on its
+own lists them. The Makefile is a shorthand, never the only way in: every
+target is one of the npm scripts above.
 
 **`--clean` costs you your login.** It deletes the app's stored data, and this
 app keeps your Picnic credentials, its session and the order it is following
 there. After it you have to sign in again on the app's settings page, and
-Picnic sends a new SMS code to do it. Use plain `make run` unless starting from
-nothing is the point.
+Picnic sends a new SMS code to do it. Use plain `npm start` unless starting
+from nothing is the point.
 
-Neither `make` nor `npm` will let you get as far as the error a fresh clone
+Neither `npm` nor `make` will let you get as far as the error a fresh clone
 used to start with, which is the Homey CLI finding no dependencies to build
 with and saying so in terms of npm:
 
@@ -159,16 +165,31 @@ shows the change without restarting the app.
 The widget can also be looked at without a Homey, in every state at once:
 
 ```bash
-make gallery
+npm run gallery
 ```
 
 serves a page with the widget's own code fed each of the states in
 `test/support/widgetstates.js`, in both widths and both themes and either
 language; edit the widget or the states and reload. Those same states go
 through the widget in the tests, so a state that renders wrong is caught
-there first. `make previews` redraws the two preview images in
-`widgets/delivery/` from `scripts/previews.js` (it needs `rsvg-convert`, from
-`brew install librsvg`).
+there first. `npm run previews` redraws the two preview images in
+`widgets/delivery/` from `scripts/previews.js`. That one needs `rsvg-convert`,
+which comes with librsvg: `brew install librsvg` on macOS, `apt install
+librsvg2-bin` on Debian or Ubuntu, `choco install rsvg-convert` on Windows.
+
+## Formatting
+
+[.editorconfig](.editorconfig) holds the formatting this repository agrees on:
+LF line endings, a final newline, no trailing whitespace, two spaces to indent.
+Most editors read it as they are, the rest have an
+[EditorConfig plugin](https://editorconfig.org/#download), and nothing about it
+is tied to a particular editor or operating system. `npm run lint` checks the
+same rules, and CI runs it on every pull request, so a file that was written
+somewhere without the plugin is caught rather than argued about.
+
+Line endings are settled twice over: `.gitattributes` checks every text file
+out as LF on every platform, Windows included, so the same bytes are in every
+working tree.
 
 ## Changelog
 
