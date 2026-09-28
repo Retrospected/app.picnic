@@ -32,6 +32,9 @@ jobs:
       # package-lock.json is not committed, so this resolves afresh each run
       - run: npm install --no-audit --no-fund
 
+      - name: Formatting, against .editorconfig
+        run: npm run lint
+
       - name: Tests
         run: npm test
 

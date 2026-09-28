@@ -12,12 +12,12 @@ NPM ?= npm
 HOMEY ?= homey
 
 .DEFAULT_GOAL := help
-.PHONY: help run run-clean install test validate gallery previews homey-cli
+.PHONY: help run run-clean install test lint validate compose validate-cli gallery previews homey-cli
 
 help: ## Say what is here
 	@echo "make <target>"
 	@echo
-	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN { FS = ":.*## " }; { printf "  %-10s %s\n", $$1, $$2 }'
+	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN { FS = ":.*## " }; { printf "  %-12s %s\n", $$1, $$2 }'
 
 run: node_modules homey-cli ## Run the app on your Homey, until you stop it
 	$(HOMEY) app run
@@ -31,8 +31,17 @@ install: node_modules homey-cli ## Install the app on your Homey, where it stays
 test: node_modules ## Run the tests
 	node --test
 
+lint: node_modules ## Check every file against .editorconfig
+	npx editorconfig-checker
+
 validate: node_modules ## Check the app the way the App Store does, without a Homey
 	node scripts/validate.js
+
+compose: node_modules homey-cli ## Regenerate app.json from .homeycompose and the widgets
+	$(HOMEY) app compose
+
+validate-cli: node_modules homey-cli ## The same validation, through the Homey CLI
+	$(HOMEY) app validate --level publish
 
 gallery: ## Show every state of the dashboard widget in a browser, without a Homey
 	node scripts/widget-gallery.js
