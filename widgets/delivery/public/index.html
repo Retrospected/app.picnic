@@ -92,7 +92,7 @@
       fill: var(--homey-color-white, #ffffff);
     }
 
-    /* pulsing animation shows the tap was registered and a request is in flight */
+    /* pulsing animation shows a request is in flight */
     .tile[data-refreshing="yes"] .logo {
       animation: asking 1.2s ease-in-out infinite;
     }
@@ -488,15 +488,20 @@
     var REFRESH_INTERVAL = 30 * 1000;
 
     // How often a widget has Picnic itself asked, rather than the app: when it
-    // comes into view and when it is tapped. The app keeps to the same limit
-    // for every widget on every dashboard together, so this only saves the
-    // widget asking for what it would not get.
+    // comes into view. The app keeps to the same limit for every widget on
+    // every dashboard together, so this only saves the widget asking for what
+    // it would not get.
     var FRESH_INTERVAL = 30 * 1000;
 
     // How often what is on screen is worked out again. Nothing here is ever
     // counted down in seconds, so this only has to be often enough that the
     // minute it shows is never noticeably behind the minute it is.
     var TICK_INTERVAL = 20 * 1000;
+
+    // Where a tap takes you: Picnic's own link into its app's storefront,
+    // which falls back to the page to download the app where it is not
+    // installed.
+    var PICNIC_URL = 'https://2a2d.adj.st/store/storefront?adj_t=21jvbqww_21uarho4';
 
     // Below this, a deadline is close enough to hurry for and is counted down
     // in minutes rather than named as a moment.
@@ -570,11 +575,11 @@
         if (!document.hidden) freshen();
       });
 
-      // A tap asks too, for anyone who wants to be sure, and says with a
-      // buzz that it did. A tap within half a minute of the last has nothing
-      // new to fetch, and is left alone.
+      // A tap opens Picnic, which is where whatever the widget says can be
+      // done something about.
       element('tile').addEventListener('click', function () {
-        if (freshen() && typeof homey.hapticFeedback == 'function') homey.hapticFeedback();
+        if (typeof homey.hapticFeedback == 'function') homey.hapticFeedback();
+        homey.popup(PICNIC_URL);
       });
 
       setInterval(function () {
