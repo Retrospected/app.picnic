@@ -125,11 +125,19 @@ its own lists the rest:
 | `make run-clean` | Run it after deleting the stored data. See the warning below |
 | `make install` | Install the app on your Homey, where it stays after the CLI is closed |
 | `make test` | The unit tests, which need nothing but Node and no dependencies at all |
+| `make lint` | Check every file against [.editorconfig](.editorconfig) |
 | `make validate` | Validates the app the way the App Store does, without the CLI and without a Homey |
+| `make compose` | Regenerate `app.json` from `.homeycompose` and the widgets |
+| `make validate-cli` | The same validation, through the Homey CLI |
+| `make gallery` | See the widget in every state in a browser. More on this below |
+| `make previews` | Redraw the widget's preview images for the App Store |
 
-All of it is there as npm scripts too: `npm start`, `npm run start:clean`,
-`npm run install:homey`, `npm test` and `npm run validate` do the same things,
-and `npm run compose` and `npm run validate:cli` are only there.
+Every one of those has an npm script that does the same, so without `make` on
+your machine, Windows most likely, they are `npm start`,
+`npm run start:clean`, `npm run install:homey`, `npm test`, `npm run lint`,
+`npm run validate`, `npm run compose`, `npm run validate:cli`,
+`npm run gallery` and `npm run previews`. Nothing here needs anything but Node
+either way.
 
 **`--clean` costs you your login.** It deletes the app's stored data, and this
 app keeps your Picnic credentials, its session and the order it is following
@@ -167,8 +175,30 @@ serves a page with the widget's own code fed each of the states in
 language; edit the widget or the states and reload. Those same states go
 through the widget in the tests, so a state that renders wrong is caught
 there first. `make previews` redraws the two preview images in
-`widgets/delivery/` from `scripts/previews.js` (it needs `rsvg-convert`, from
-`brew install librsvg`).
+`widgets/delivery/` from `scripts/previews.js`. That one needs `rsvg-convert`,
+which comes with librsvg: `brew install librsvg` on macOS, `apt install
+librsvg2-bin` on Debian or Ubuntu, `choco install rsvg-convert` on Windows.
+
+## Formatting
+
+[.editorconfig](.editorconfig) holds the formatting this repository agrees on:
+LF line endings, a final newline, no trailing whitespace, two spaces to indent.
+Most editors read it as they are, the rest have an
+[EditorConfig plugin](https://editorconfig.org/#download), and nothing about it
+is tied to a particular editor or operating system. `make lint` checks the same
+rules with
+[editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker),
+which reads `.editorconfig` itself so nothing is written down twice, and CI
+runs it on every pull request, so a file that was written somewhere without the
+plugin is caught rather than argued about. `.editorconfig-checker.json` holds
+the one thing `.editorconfig` cannot say: the indent width is not enforced,
+since the checker reads a continuation line as indentation and this code aligns
+them by hand. The third party files in `settings/` are left alone by the
+`unset` block at the bottom of `.editorconfig`.
+
+Line endings are settled twice over: `.gitattributes` checks every text file
+out as LF on every platform, Windows included, so the same bytes are in every
+working tree.
 
 ## Changelog
 
