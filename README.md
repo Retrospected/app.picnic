@@ -182,57 +182,14 @@ librsvg2-bin` on Debian or Ubuntu, `choco install rsvg-convert` on Windows.
 
 ## Test versions
 
-Every merge to `master` is published to Homey as the app's Test version by
-[.github/workflows/deploy-test.yml](.github/workflows/deploy-test.yml), so a
-change can be tried on a real Homey without anyone publishing it by hand. The
-tests and the App Store validation run first, and nothing is published unless
-they pass. The build lands as a Draft in the
-[Homey Developer Tools](https://tools.developer.homey.app) and
-`scripts/homey-release.js` then moves it to Test. Going Live is still a click
-in the Developer Tools.
-
-Every publish gets a new version, since Homey takes every version number
-only once and only ever a higher one. The version follows the title of the
-commit on `master`, which with squash and merge is the title of the pull
-request, read as a [conventional commit](https://www.conventionalcommits.org):
-
-| Title | Release | From 3.8.1 |
-| --- | --- | --- |
-| `feat!: ...`, `fix(api)!: ...`, or `BREAKING CHANGE:` in the message | major | 4.0.0 |
-| `feat: ...`, `feat(widget): ...` | minor | 3.9.0 |
-| `fix: ...`, `chore: ...`, `test: ...`, anything else | patch | 3.8.2 |
-
-That title, less its type and pull request number and starting with a
-capital, is also the version's changelog in `.homeychangelog.json`:
-`feat(widget): open Picnic when tapped (#62)` goes in as `Open Picnic when
-tapped`, unless the pull request already wrote one for that version. Once the build is on
-Homey, the workflow commits the new version in `.homeycompose/app.json`,
-`app.json` and `package.json`, and the changelog entry, to `master` as
-`chore(release): vX.Y.Z`. So a pull request leaves the version alone, and its
-title is worth writing for the people who read the changelog.
-
-A merge that only changes what stays out of the app is tested and publishes
-nothing: no build, no new version and no changelog entry. What stays out is
-what [.homeyignore](.homeyignore) names, `test/`, `scripts/`, `docs/`,
-`.github/`, `README.md`, `CHANGELOG.md` and the like, and the dotfiles the
-Homey CLI leaves out besides, such as `.gitignore`. The `.homey` files do
-count, since the app is built from them. Such a merge's changes go out with
-the next one that does change the app, under that one's title. Run by hand
-from the Actions tab, the workflow publishes regardless.
-
-The workflow needs three secrets in the `test-deploy` environment, under
-**Settings → Environments** in GitHub:
-
-- `HOMEY_PAT`, the Homey app owner's Personal Access Token, from
-  [tools.developer.homey.app/me](https://tools.developer.homey.app/me)
-- `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY`, of the GitHub App
-  "Picnic App Worker". It has only *Contents: read and write* on this
-  repository, and it is on the bypass list of the ruleset on `master`, which
-  otherwise asks for a pull request and passing checks. The version commit is
-  pushed as that app
-
-The workflow can also be run by hand from the Actions tab to publish `master`
-again.
+Every merge to `master` that changes the app is published to Homey as its Test
+version by [deploy-test.yml](.github/workflows/deploy-test.yml), once the tests
+and validation pass. The version bump follows the pull request title as a
+conventional commit: `feat!:` is major, `feat:` minor, anything else a patch.
+The title also becomes the changelog entry, and the workflow commits both to
+`master`. Merges that only touch files in [.homeyignore](.homeyignore) publish
+nothing. Going Live is still done in the
+[Homey Developer Tools](https://tools.developer.homey.app).
 
 ## Formatting
 
