@@ -6,9 +6,14 @@
 # and that title becomes its changelog: see scripts/homey-release.js. Once the
 # build is on Homey, the new version and changelog are committed to master.
 #
-# It needs the app owner's Personal Access Token, from
-# https://tools.developer.homey.app/me, as the secret HOMEY_PAT of the
-# `test-deploy` environment. Only the publishing job can read it.
+# It needs these secrets in the `test-deploy` environment, which only the
+# publishing job can read:
+#
+# - HOMEY_PAT, the Homey app owner's Personal Access Token, from
+#   https://tools.developer.homey.app/me
+# - RELEASE_APP_ID and RELEASE_APP_PRIVATE_KEY, of the GitHub App "Picnic App
+#   Worker", which the ruleset on master lets push the version commit. The
+#   workflow's own token is held to the ruleset like anyone else
 name: Deploy to Homey as Test
 
 on:
@@ -20,16 +25,11 @@ on:
 permissions:
   contents: read
 
-# one publish at a time: two at once would pick the same version. A run that
-# is waiting is not cancelled, it publishes after the one ahead of it
-concurrency:
-  group: deploy-test
-  cancel-in-progress: false
-
 jobs:
   test:
     # the commit this workflow makes itself is only the version and changelog
-    # of a build already on Homey
+    # of a build already on Homey. Pushed by the app it does start a run, and
+    # this is where that run ends
     if: "!startsWith(github.event.head_commit.message, 'chore(release): ')"
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -59,9 +59,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: test-deploy
-    permissions:
-      # to commit the version and changelog to master
-      contents: write
+
+    # one publish at a time: two at once would pick the same version. A run
+    # that is waiting is not cancelled, it publishes after the one ahead of it.
+    # This sits on the job rather than the workflow, so that the run the
+    # version commit starts, which publishes nothing, cannot take the place of
+    # a merge that is waiting its turn
+    concurrency:
+      group: deploy-test
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -104,15 +110,32 @@ jobs:
           HOMEY_PAT: ${{ secrets.HOMEY_PAT }}
           NODE_PATH: ${{ runner.temp }}/homey-api/node_modules
 
+      # a token of the app, valid for an hour, for this repository only
+      - name: Sign in as Picnic App Worker
+        id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       # onto master as it is by now, which is this commit or one after it
       - name: Commit the version and changelog to master
         env:
           VERSION: ${{ steps.prepare.outputs.version }}
+          APP_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           # the publish action runs as root and leaves its files that way
           sudo chown -R "$(id -u):$(id -g)" .
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # the commit is the app's, which is who the ruleset lets through
+          user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
           for attempt in 1 2 3; do
             git fetch --depth=1 origin master

@@ -211,12 +211,19 @@ Homey, the workflow commits the new version in `.homeycompose/app.json`,
 `chore(release): vX.Y.Z`. So a pull request leaves the version alone, and its
 title is worth writing for the people who read the changelog.
 
-The workflow needs the app owner's Personal Access Token, from
-[tools.developer.homey.app/me](https://tools.developer.homey.app/me), as the
-secret `HOMEY_PAT` of the `test-deploy` environment under **Settings →
-Environments** in GitHub. When `master` is protected, the GitHub Actions bot
-has to be allowed to push to it for the version commit. The workflow can also
-be run by hand from the Actions tab to publish `master` again.
+The workflow needs three secrets in the `test-deploy` environment, under
+**Settings → Environments** in GitHub:
+
+- `HOMEY_PAT`, the Homey app owner's Personal Access Token, from
+  [tools.developer.homey.app/me](https://tools.developer.homey.app/me)
+- `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY`, of the GitHub App
+  "Picnic App Worker". It has only *Contents: read and write* on this
+  repository, and it is on the bypass list of the ruleset on `master`, which
+  otherwise asks for a pull request and passing checks. The version commit is
+  pushed as that app
+
+The workflow can also be run by hand from the Actions tab to publish `master`
+again.
 
 ## Formatting
 
