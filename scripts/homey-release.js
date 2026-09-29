@@ -5,10 +5,18 @@
 // turn every merge to master into a Test version on Homey, without a person in
 // the Developer Tools:
 //
+//   node scripts/homey-release.js ships                says whether the last commit
+//                                                      changes anything in the app
 //   node scripts/homey-release.js prepare              picks the version and writes it
 //   node scripts/homey-release.js promote              moves that build from Draft to Test
 //   node scripts/homey-release.js apply <version> <commit>
 //                                                      writes a version and its changelog
+//
+// A commit that only changes what stays out of the app, what .homeyignore
+// names and the dotfiles the CLI leaves out besides, would publish the same
+// app under a new number. `ships` says so, and the workflow then publishes
+// nothing: no build, no version, no changelog. The .homey files are dotfiles
+// too, but they are what the CLI builds the app from, so they count.
 //
 // `prepare` and `promote` talk to Athom's API as the owner of the Personal
 // Access Token in HOMEY_PAT, the same token the publish action is given.
@@ -36,6 +44,7 @@ const composePath = path.join(appPath, '.homeycompose', 'app.json');
 const manifestPath = path.join(appPath, 'app.json');
 const packagePath = path.join(appPath, 'package.json');
 const changelogPath = path.join(appPath, '.homeychangelog.json');
+const homeyignorePath = path.join(appPath, '.homeyignore');
 
 // the client the Homey CLI identifies itself with, which is what a Personal
 // Access Token is issued to use
@@ -99,6 +108,36 @@ function changelogFor(commitMessage) {
 
   // the CLI turns down anything of three characters or fewer
   return title.length > 3 ? title : 'Test version built from master';
+}
+
+// a pattern of .homeyignore as a regular expression, for the part of the
+// gitignore syntax a .homeyignore uses: an anchoring "/" in front, a "/" at
+// the end for a folder, and * and ? within a name
+function ignoreRule(pattern) {
+  const anchored = pattern.startsWith('/') || pattern.slice(0, -1).includes('/');
+  const folder = pattern.endsWith('/');
+  const body = pattern.replace(/^\//, '').replace(/\/$/, '')
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '\u0000')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '[^/]')
+    .replace(/\u0000/g, '.*');
+
+  return new RegExp((anchored ? '^' : '(^|/)') + body + (folder ? '/' : '(/|$)'));
+}
+
+// whether a file, by its path from the root of the repository, ends up in the
+// app or goes into building it
+function ships(file, patterns) {
+  if (file.split('/').some(part => part.startsWith('.') && !part.startsWith('.homey'))) return false;
+
+  const rules = patterns.map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+
+  // a "!" takes a file back in, which this does not follow, so it errs on
+  // the side of a release
+  if (rules.some(rule => rule.startsWith('!'))) return true;
+
+  return !rules.some(rule => ignoreRule(rule).test(file));
 }
 
 function readJson(file) {
@@ -173,6 +212,25 @@ function apply(version, commit) {
   console.log(readJson(composePath).id + '@' + version + ': ' + changelog[version].en);
 }
 
+function checkShips() {
+  const patterns = fs.existsSync(homeyignorePath) ? fs.readFileSync(homeyignorePath, 'utf8').split('\n') : [];
+
+  var files;
+  try {
+    files = git('diff', '--name-only', 'HEAD^', 'HEAD').split('\n').filter(Boolean);
+  } catch (exception) {
+    // with nothing to compare to, everything is new
+    console.log('No parent commit to compare with, so the app counts as changed.');
+    output('ships', 'true');
+    return;
+  }
+
+  const shipped = files.filter(file => ships(file, patterns));
+
+  files.forEach(file => console.log((shipped.includes(file) ? 'ships  ' : 'stays  ') + file));
+  output('ships', shipped.length > 0 ? 'true' : 'false');
+}
+
 async function prepare() {
   const { id: appId, version: current } = readJson(composePath);
   const message = git('log', '-1', '--format=%B', 'HEAD');
@@ -211,7 +269,7 @@ async function promote() {
 }
 
 if (require.main === module) {
-  const commands = { prepare, promote, apply: () => apply(process.argv[3], process.argv[4]) };
+  const commands = { ships: checkShips, prepare, promote, apply: () => apply(process.argv[3], process.argv[4]) };
   const command = commands[process.argv[2]];
 
   if (!command) {
@@ -225,4 +283,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { nextVersion, bumpFor, changelogFor };
+module.exports = { nextVersion, bumpFor, changelogFor, ships };

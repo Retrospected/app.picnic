@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { nextVersion, bumpFor, changelogFor } = require('../scripts/homey-release.js');
+const { nextVersion, bumpFor, changelogFor, ships } = require('../scripts/homey-release.js');
 
 test('a fix is a patch release', () => {
   assert.strictEqual(bumpFor('fix(login): keep the session (#63)'), 'patch');
@@ -90,4 +90,64 @@ test('a type with nothing after it is replaced by a changelog the CLI accepts', 
 
 test('a title too short for the CLI is replaced by one it accepts', () => {
   assert.strictEqual(changelogFor('wip'), 'Test version built from master');
+});
+
+const HOMEYIGNORE = [
+  '/test/',
+  '/scripts/',
+  '/Makefile',
+  '/VERIFICATION.md',
+  '/docs/',
+  '/README.md',
+  '/CHANGELOG.md',
+  '/.editorconfig',
+  '/.editorconfig-checker.json',
+  '/.github/'
+];
+
+test('the code, the widget and what the app is built from ship', () => {
+  ['app.js', 'api.js', 'lib/cutoff.js', 'widgets/delivery/public/index.html', 'locales/nl.json',
+    'settings/index.html', 'assets/images/large.png', 'app.json', 'package.json', 'README.txt', 'LICENSE']
+    .forEach(file => assert.strictEqual(ships(file, HOMEYIGNORE), true, file));
+});
+
+test('the .homey files ship, although the CLI leaves other dotfiles out', () => {
+  ['.homeycompose/app.json', '.homeycompose/flow/triggers/delivery_soon.json', '.homeychangelog.json',
+    '.homeyignore', '.homeyplugins.json']
+    .forEach(file => assert.strictEqual(ships(file, HOMEYIGNORE), true, file));
+});
+
+test('what .homeyignore names stays out', () => {
+  ['test/cutoff.test.js', 'test/support/homey.js', 'scripts/deps.js', 'Makefile', 'VERIFICATION.md',
+    'docs/picnic-api.md', 'README.md', 'CHANGELOG.md', '.github/workflows/test.yml', '.editorconfig']
+    .forEach(file => assert.strictEqual(ships(file, HOMEYIGNORE), false, file));
+});
+
+test('the other dotfiles stay out, as the CLI leaves them out', () => {
+  ['.gitignore', '.gitattributes', 'widgets/delivery/.DS_Store']
+    .forEach(file => assert.strictEqual(ships(file, HOMEYIGNORE), false, file));
+});
+
+test('an anchored pattern only matches at the root', () => {
+  assert.strictEqual(ships('widgets/docs/help.md', HOMEYIGNORE), true);
+  assert.strictEqual(ships('lib/Makefile', HOMEYIGNORE), true);
+});
+
+test('a pattern without a "/" in front matches at any depth, with wildcards', () => {
+  assert.strictEqual(ships('widgets/delivery/notes.md', ['*.md']), false);
+  assert.strictEqual(ships('lib/cutoff.js', ['*.md']), true);
+  assert.strictEqual(ships('assets/raw/a/b.svg', ['assets/raw/**']), false);
+});
+
+test('a folder pattern leaves a file of the same name alone', () => {
+  assert.strictEqual(ships('docs', ['/docs/']), true);
+  assert.strictEqual(ships('docs.js', ['/docs/']), true);
+});
+
+test('comments and empty lines in .homeyignore are not patterns', () => {
+  assert.strictEqual(ships('app.js', ['# the tests', '', '/test/']), true);
+});
+
+test('a .homeyignore that takes files back in with "!" errs on the side of a release', () => {
+  assert.strictEqual(ships('test/cutoff.test.js', ['/test/', '!/test/fixture.json']), true);
 });

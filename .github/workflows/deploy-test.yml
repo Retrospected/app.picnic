@@ -6,6 +6,10 @@
 # and that title becomes its changelog: see scripts/homey-release.js. Once the
 # build is on Homey, the new version and changelog are committed to master.
 #
+# A merge that only changes what stays out of the app, what .homeyignore names
+# and the dotfiles besides, is tested and publishes nothing: no build, no
+# version, no changelog. Run by hand, the workflow publishes regardless.
+#
 # It needs these secrets in the `test-deploy` environment, which only the
 # publishing job can read:
 #
@@ -33,9 +37,14 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, 'chore(release): ')"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      ships: ${{ steps.ships.outputs.ships }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the commit before it, to see what this one changes
+          fetch-depth: 2
 
       - uses: actions/setup-node@v4
         with:
@@ -52,10 +61,21 @@ jobs:
       - name: Validate at App Store level
         run: npm run validate
 
+      - name: Does anything in the app change?
+        id: ships
+        run: |
+          node scripts/homey-release.js ships
+          if grep -q '^ships=false$' "$GITHUB_OUTPUT"; then
+            echo "Nothing that ships in the app changed, so nothing is published and the version stays as it is." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   publish:
     needs: test
-    # a run started by hand from another branch has nothing to publish
-    if: github.ref == 'refs/heads/master'
+    # a run started by hand from another branch has nothing to publish, and a
+    # merge that changes nothing in the app neither
+    if: >-
+      github.ref == 'refs/heads/master' &&
+      (needs.test.outputs.ships == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: test-deploy

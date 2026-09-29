@@ -211,6 +211,15 @@ Homey, the workflow commits the new version in `.homeycompose/app.json`,
 `chore(release): vX.Y.Z`. So a pull request leaves the version alone, and its
 title is worth writing for the people who read the changelog.
 
+A merge that only changes what stays out of the app is tested and publishes
+nothing: no build, no new version and no changelog entry. What stays out is
+what [.homeyignore](.homeyignore) names, `test/`, `scripts/`, `docs/`,
+`.github/`, `README.md`, `CHANGELOG.md` and the like, and the dotfiles the
+Homey CLI leaves out besides, such as `.gitignore`. The `.homey` files do
+count, since the app is built from them. Such a merge's changes go out with
+the next one that does change the app, under that one's title. Run by hand
+from the Actions tab, the workflow publishes regardless.
+
 The workflow needs three secrets in the `test-deploy` environment, under
 **Settings → Environments** in GitHub:
 
