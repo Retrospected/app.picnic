@@ -109,5 +109,8 @@
   },
   "3.8.1": {
     "en": "Added a Delivery widget for Homey Dashboards showing order status, delivery window, and cart contents with live countdown and state updates"
+  },
+  "3.8.2": {
+    "en": "Tapping on the widget opens your Picnic app"
   }
 }

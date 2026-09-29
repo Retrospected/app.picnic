@@ -1,6 +1,6 @@
 {
   "id": "app.picnic",
-  "version": "3.8.1",
+  "version": "3.8.2",
   "compatibility": ">=12.3.0",
   "sdk": 3,
   "name": {
