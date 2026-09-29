@@ -51,6 +51,7 @@ function harness(settings) {
   const page = { hidden: false, listeners: {} };
   // what the stand-in Homey buzzed
   const buzzes = [];
+  const popups = [];
 
   const context = {
     document: {
@@ -80,7 +81,8 @@ function harness(settings) {
     on() { },
     getSettings: () => settings || {},
     api: (method, route) => { calls.push(method + ' ' + route); return Promise.resolve(null); },
-    hapticFeedback: () => { buzzes.push(true); }
+    hapticFeedback: () => { buzzes.push(true); },
+    popup: (url) => { popups.push(url); }
   });
 
   return {
@@ -88,6 +90,7 @@ function harness(settings) {
     calls,
     page,
     buzzes,
+    popups,
     adopt: context.adopt,
     render: context.render,
     // the caption above the number reads as part of it: "Delivery in" "15 min"
@@ -599,25 +602,18 @@ test('a widget that opens has Picnic asked straight away, next to showing what t
   assert.strictEqual(nodes.tile.dataset.refreshing, 'yes');
 });
 
-test('a tap has Picnic asked and buzzes, but not twice in half a minute', () => {
-  const { calls, nodes, buzzes } = harness();
+test('a tap opens Picnic and buzzes, every time, without having Picnic asked', () => {
+  const { calls, nodes, buzzes, popups } = harness();
   const tap = nodes.tile.listeners.click;
-  const opened = Date.now;
 
-  try {
-    // half a minute after opening, a tap asks again
-    Date.now = () => opened() + 31 * 1000;
-    tap();
-    assert.deepStrictEqual(calls.filter(call => call == 'POST /refresh').length, 2);
-    assert.strictEqual(buzzes.length, 1);
+  tap();
+  tap();
 
-    // and a tap right after it is left alone, buzz and all
-    tap();
-    assert.deepStrictEqual(calls.filter(call => call == 'POST /refresh').length, 2);
-    assert.strictEqual(buzzes.length, 1);
-  } finally {
-    Date.now = opened;
-  }
+  assert.strictEqual(popups.length, 2);
+  assert.match(popups[0], /^https:\/\//);
+  assert.strictEqual(buzzes.length, 2);
+  // only the refresh from opening, none from the taps
+  assert.strictEqual(calls.filter(call => call == 'POST /refresh').length, 1);
 });
 
 test('coming back into view has Picnic asked, going out of it does not', () => {

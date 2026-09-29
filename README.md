@@ -67,10 +67,11 @@ the wall is good at telling you: when the groceries turn up.
 - A late delivery says how many minutes late it is
 - When the app has not been able to reach Picnic in over a day, the widget says
   so and when it last heard, rather than passing off what it knew as news
-- It has Picnic asked for the latest when it opens, when it comes back into
-  view and when you tap it, so a cart filled in Picnic's app shows within
-  seconds. Picnic is asked at most once every half minute however often that
-  happens, and otherwise every five minutes while a dashboard shows the widget
+- Tapping it opens Picnic
+- It has Picnic asked for the latest when it opens and when it comes back into
+  view, so a cart filled in Picnic's app shows within seconds. Picnic is asked
+  at most once every half minute however often that happens, and otherwise
+  every five minutes while a dashboard shows the widget
 
 Picnic's mark sits at the top left of every tile, the state's icon and name
 next to it, and each colour means one thing: red is Picnic and a cart still to

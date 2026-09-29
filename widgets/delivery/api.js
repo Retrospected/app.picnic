@@ -9,7 +9,7 @@ module.exports = {
   },
 
   // The same, as fresh as Picnic can make it: for a widget that just came
-  // into view or was tapped. The app decides how often that reaches Picnic.
+  // into view. The app decides how often that reaches Picnic.
   async refresh({ homey }) {
     return await homey.app.refreshDeliveryWidgetState();
   }
