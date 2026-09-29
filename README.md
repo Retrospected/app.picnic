@@ -191,19 +191,30 @@ they pass. The build lands as a Draft in the
 `scripts/homey-release.js` then moves it to Test. Going Live is still a click
 in the Developer Tools.
 
-Homey takes every version number only once, and only ever a higher one. The
-workflow publishes the version in `.homeycompose/app.json` when no build has
-it yet, and otherwise the patch after the highest build Homey has. That number
-is only set in the CI run and is not committed back. For a release, bump the
-version and add its changelog to `.homeychangelog.json` in the pull request as
-before, and the merge publishes it under that number. A version without a
-changelog gets the title of the merged pull request as its changelog.
+Every publish gets a new version, since Homey takes every version number
+only once and only ever a higher one. The version follows the title of the
+commit on `master`, which with squash and merge is the title of the pull
+request, read as a [conventional commit](https://www.conventionalcommits.org):
+
+| Title | Release | From 3.8.1 |
+| --- | --- | --- |
+| `feat!: ...`, `fix(api)!: ...`, or `BREAKING CHANGE:` in the message | major | 4.0.0 |
+| `feat: ...`, `feat(widget): ...` | minor | 3.9.0 |
+| `fix: ...`, `chore: ...`, `test: ...`, anything else | patch | 3.8.2 |
+
+That title is also the version's changelog in `.homeychangelog.json`, unless
+the pull request already wrote one for that version. Once the build is on
+Homey, the workflow commits the new version in `.homeycompose/app.json`,
+`app.json` and `package.json`, and the changelog entry, to `master` as
+`chore(release): vX.Y.Z`. So a pull request leaves the version alone, and its
+title is worth writing for the people who read the changelog.
 
 The workflow needs the app owner's Personal Access Token, from
 [tools.developer.homey.app/me](https://tools.developer.homey.app/me), as the
 secret `HOMEY_PAT` of the `test-deploy` environment under **Settings →
-Environments** in GitHub. It can also be run by hand from the Actions tab to
-publish `master` again.
+Environments** in GitHub. When `master` is protected, the GitHub Actions bot
+has to be allowed to push to it for the version commit. The workflow can also
+be run by hand from the Actions tab to publish `master` again.
 
 ## Formatting
 

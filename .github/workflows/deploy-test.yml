@@ -2,6 +2,10 @@
 # be tried on a real Homey without anyone publishing by hand. The tests and the
 # App Store validation run first, and nothing is published unless they pass.
 #
+# The version follows the title of what was merged, as a conventional commit,
+# and that title becomes its changelog: see scripts/homey-release.js. Once the
+# build is on Homey, the new version and changelog are committed to master.
+#
 # It needs the app owner's Personal Access Token, from
 # https://tools.developer.homey.app/me, as the secret HOMEY_PAT of the
 # `test-deploy` environment. Only the publishing job can read it.
@@ -24,6 +28,9 @@ concurrency:
 
 jobs:
   test:
+    # the commit this workflow makes itself is only the version and changelog
+    # of a build already on Homey
+    if: "!startsWith(github.event.head_commit.message, 'chore(release): ')"
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -52,9 +59,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: test-deploy
+    permissions:
+      # to commit the version and changelog to master
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
+
+      # the version on master may be ahead of this commit, when something else
+      # was merged and published while this run waited its turn
+      - name: Fetch master
+        run: git fetch --depth=1 origin master
 
       - uses: actions/setup-node@v4
         with:
@@ -88,6 +103,26 @@ jobs:
         env:
           HOMEY_PAT: ${{ secrets.HOMEY_PAT }}
           NODE_PATH: ${{ runner.temp }}/homey-api/node_modules
+
+      # onto master as it is by now, which is this commit or one after it
+      - name: Commit the version and changelog to master
+        env:
+          VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          # the publish action runs as root and leaves its files that way
+          sudo chown -R "$(id -u):$(id -g)" .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin master
+            git checkout -f -B release origin/master
+            node scripts/homey-release.js apply "$VERSION" "$GITHUB_SHA"
+            git commit -q -am "chore(release): v$VERSION"
+            git push origin HEAD:master && exit 0
+            sleep 5
+          done
+          exit 1
 
       - name: Summary
         run: |

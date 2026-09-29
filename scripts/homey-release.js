@@ -5,23 +5,26 @@
 // turn every merge to master into a Test version on Homey, without a person in
 // the Developer Tools:
 //
-//   node scripts/homey-release.js prepare    picks the version and the changelog
-//   node scripts/homey-release.js promote    moves that build from Draft to Test
+//   node scripts/homey-release.js prepare              picks the version and writes it
+//   node scripts/homey-release.js promote              moves that build from Draft to Test
+//   node scripts/homey-release.js apply <version> <commit>
+//                                                      writes a version and its changelog
 //
-// Both talk to Athom's API as the owner of the Personal Access Token in
-// HOMEY_PAT, the same token the publish action is given.
+// `prepare` and `promote` talk to Athom's API as the owner of the Personal
+// Access Token in HOMEY_PAT, the same token the publish action is given.
 //
-// Homey takes every version only once, and only ever a higher one, so each
-// publish needs a version no build has had. `prepare` takes the version in
-// .homeycompose/app.json when no build has it yet, which is how a release
-// someone bumped by hand goes out under its own number, and otherwise the
-// patch after the highest build there is. It writes that version into the
-// working tree of the CI run only: nothing is committed back, so the version
-// in the repository stays what the last person to bump it made it.
+// The version follows the title of the commit that was merged, which with
+// squash and merge is the title of the pull request, read as a conventional
+// commit: a "!" after the type or a "BREAKING CHANGE:" in the message is a
+// major release, "feat" a minor one, and everything else a patch, "fix",
+// "chore" and "test" as much as a title that follows no convention at all.
 //
-// The CLI refuses to publish in headless mode without a changelog for the
-// version, so for a version the repository has no changelog for, `prepare`
-// writes one from the pull request that was merged.
+// It counts from the highest of the version in the commit that is published,
+// the one on master by now, and the highest build Homey has, since Homey takes
+// every version only once and only ever a higher one. That title is also the
+// changelog of the new version. `apply` writes both into .homeycompose/app.json,
+// app.json, package.json and .homeychangelog.json, which `prepare` does for the
+// build and the workflow does again on master, to commit them there.
 
 const fs = require('fs');
 const path = require('path');
@@ -30,6 +33,7 @@ const { execFileSync } = require('child_process');
 const appPath = path.join(__dirname, '..');
 const composePath = path.join(appPath, '.homeycompose', 'app.json');
 const manifestPath = path.join(appPath, 'app.json');
+const packagePath = path.join(appPath, 'package.json');
 const changelogPath = path.join(appPath, '.homeychangelog.json');
 
 // the client the Homey CLI identifies itself with, which is what a Personal
@@ -54,39 +58,65 @@ function compareVersions(a, b) {
   return 0;
 }
 
-// the version to publish, given the one in the repository and those of every
-// build Homey already has
-function nextVersion(current, published) {
-  const versions = published.filter(version => parseVersion(version) !== null);
-  if (versions.length === 0) return current;
+// the title of what was merged: the commit's subject, or with a merge commit
+// the title of the pull request, which GitHub puts under its first line
+function titleOf(commitMessage) {
+  const lines = String(commitMessage).split('\n').map(line => line.trim()).filter(Boolean);
+  const subject = lines[0] || '';
+  return /^Merge pull request #\d+/.test(subject) && lines[1] ? lines[1] : subject;
+}
 
-  const highest = versions.reduce((a, b) => compareVersions(a, b) >= 0 ? a : b);
-  if (compareVersions(current, highest) > 0) return current;
+// major, minor or patch, after the conventional commit the title is
+function bumpFor(commitMessage) {
+  const match = /^(\w+)(\([^)]*\))?(!)?:/.exec(titleOf(commitMessage));
 
-  const [major, minor, patch] = parseVersion(highest);
+  if ((match && match[3]) || /^BREAKING[ -]CHANGE:/m.test(commitMessage)) return 'major';
+  if (match && match[1].toLowerCase() === 'feat') return 'minor';
+  return 'patch';
+}
+
+// the version to publish, given the versions it could count from, those of
+// the repository and those of every build Homey already has
+function nextVersion(versions, bump) {
+  const [major, minor, patch] = parseVersion(versions
+    .filter(version => parseVersion(version) !== null)
+    .reduce((a, b) => compareVersions(a, b) >= 0 ? a : b));
+
+  if (bump === 'major') return (major + 1) + '.0.0';
+  if (bump === 'minor') return major + '.' + (minor + 1) + '.0';
   return major + '.' + minor + '.' + (patch + 1);
 }
 
-// what a tester reads about a build: the title of the pull request that was
-// merged, which GitHub puts under the "Merge pull request" line, or the commit
-// itself when it went in some other way
 function changelogFor(commitMessage) {
-  const lines = String(commitMessage).split('\n').map(line => line.trim()).filter(Boolean);
-  const subject = lines[0] || '';
-  const text = /^Merge pull request #\d+/.test(subject) && lines[1] ? lines[1] : subject;
+  const title = titleOf(commitMessage);
 
   // the CLI turns down anything of three characters or fewer
-  return text.length > 3 ? text : 'Test version built from master';
+  return title.length > 3 ? title : 'Test version built from master';
 }
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+// the first "version" in each of these files is the app's own
 function setVersion(file, version) {
   const text = fs.readFileSync(file, 'utf8');
   const updated = text.replace(/("version"\s*:\s*")[^"]*(")/, '$1' + version + '$2');
   fs.writeFileSync(file, updated);
+}
+
+function git(...args) {
+  return execFileSync('git', args, { cwd: appPath, encoding: 'utf8' });
+}
+
+// the version on master by now, which may be ahead of the commit published
+// when something else was merged in the meantime
+function versionOnMaster() {
+  try {
+    return JSON.parse(git('show', 'origin/master:.homeycompose/app.json')).version;
+  } catch (exception) {
+    return null;
+  }
 }
 
 function output(name, value) {
@@ -120,25 +150,32 @@ async function getBuilds(appId) {
   return { api, $token, builds: Array.isArray(builds) ? builds : Object.values(builds || {}) };
 }
 
-async function prepare() {
-  const appId = readJson(composePath).id;
-  const current = readJson(composePath).version;
-  const { builds } = await getBuilds(appId);
-  const version = nextVersion(current, builds.map(build => build.version));
+function apply(version, commit) {
+  if (parseVersion(version) === null) throw new Error('"' + version + '" is not a version.');
+  const message = git('log', '-1', '--format=%B', commit || 'HEAD');
 
-  if (version !== current) {
-    setVersion(composePath, version);
-    setVersion(manifestPath, version);
-  }
+  [composePath, manifestPath, packagePath].forEach(file => setVersion(file, version));
 
+  // a changelog someone wrote for this version themselves is left as it is
   const changelog = readJson(changelogPath);
   if (!changelog[version] || !changelog[version].en) {
-    const message = execFileSync('git', ['log', '-1', '--format=%B'], { cwd: appPath, encoding: 'utf8' });
     changelog[version] = { en: changelogFor(message) };
     fs.writeFileSync(changelogPath, JSON.stringify(changelog, null, 2) + '\n');
   }
 
-  console.log('Publishing ' + appId + '@' + version + ': ' + changelog[version].en);
+  console.log(readJson(composePath).id + '@' + version + ': ' + changelog[version].en);
+}
+
+async function prepare() {
+  const { id: appId, version: current } = readJson(composePath);
+  const message = git('log', '-1', '--format=%B', 'HEAD');
+  const { builds } = await getBuilds(appId);
+
+  const bump = bumpFor(message);
+  const version = nextVersion([current, versionOnMaster(), ...builds.map(build => build.version)], bump);
+
+  console.log('A ' + bump + ' release, from "' + titleOf(message) + '".');
+  apply(version, 'HEAD');
   output('version', version);
 }
 
@@ -167,7 +204,7 @@ async function promote() {
 }
 
 if (require.main === module) {
-  const commands = { prepare, promote };
+  const commands = { prepare, promote, apply: () => apply(process.argv[3], process.argv[4]) };
   const command = commands[process.argv[2]];
 
   if (!command) {
@@ -175,10 +212,10 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  command().catch(error => {
+  Promise.resolve().then(command).catch(error => {
     console.error(error && error.message ? error.message : error);
     process.exit(1);
   });
 }
 
-module.exports = { nextVersion, changelogFor };
+module.exports = { nextVersion, bumpFor, changelogFor };
