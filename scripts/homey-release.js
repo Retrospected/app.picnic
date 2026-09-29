@@ -22,7 +22,7 @@
 // It counts from the highest of the version in the commit that is published,
 // the one on master by now, and the highest build Homey has, since Homey takes
 // every version only once and only ever a higher one. That title is also the
-// changelog of the new version. `apply` writes both into .homeycompose/app.json,
+// changelog of the new version, without its type. `apply` writes both into .homeycompose/app.json,
 // app.json, package.json and .homeychangelog.json, which `prepare` does for the
 // build and the workflow does again on master, to commit them there.
 
@@ -87,8 +87,10 @@ function nextVersion(versions, bump) {
   return major + '.' + minor + '.' + (patch + 1);
 }
 
+// the title without its conventional commit type, which says something to
+// whoever reads the history but nothing to whoever reads the App Store
 function changelogFor(commitMessage) {
-  const title = titleOf(commitMessage);
+  const title = titleOf(commitMessage).replace(/^\w+(\([^)]*\))?!?:\s*/, '');
 
   // the CLI turns down anything of three characters or fewer
   return title.length > 3 ? title : 'Test version built from master';

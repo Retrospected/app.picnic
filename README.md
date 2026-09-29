@@ -202,8 +202,10 @@ request, read as a [conventional commit](https://www.conventionalcommits.org):
 | `feat: ...`, `feat(widget): ...` | minor | 3.9.0 |
 | `fix: ...`, `chore: ...`, `test: ...`, anything else | patch | 3.8.2 |
 
-That title is also the version's changelog in `.homeychangelog.json`, unless
-the pull request already wrote one for that version. Once the build is on
+That title, less its type, is also the version's changelog in
+`.homeychangelog.json`: `feat(widget): open Picnic when tapped (#62)` goes in
+as `open Picnic when tapped (#62)`, unless the pull request already wrote one
+for that version. Once the build is on
 Homey, the workflow commits the new version in `.homeycompose/app.json`,
 `app.json` and `package.json`, and the changelog entry, to `master` as
 `chore(release): vX.Y.Z`. So a pull request leaves the version alone, and its

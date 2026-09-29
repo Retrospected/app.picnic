@@ -39,7 +39,7 @@ test('a BREAKING CHANGE in the message is a major release', () => {
 test('a merge commit is read by the title of its pull request', () => {
   const message = 'Merge pull request #59 from rvanlaak/chore/widget-url\n\nfeat(widget): open Picnic when tapped\n';
   assert.strictEqual(bumpFor(message), 'minor');
-  assert.strictEqual(changelogFor(message), 'feat(widget): open Picnic when tapped');
+  assert.strictEqual(changelogFor(message), 'open Picnic when tapped');
 });
 
 test('a patch counts on from the version in the repository', () => {
@@ -66,8 +66,21 @@ test('what is not a plain version is left out of the count', () => {
   assert.strictEqual(nextVersion(['3.8.1', null, undefined, 'beta'], 'patch'), '3.8.2');
 });
 
-test('the changelog is the title of the squashed pull request', () => {
-  assert.strictEqual(changelogFor('fix: keep the login (#63)\n\n* fix: one\n* fix: two'), 'fix: keep the login (#63)');
+test('the changelog is the title of the squashed pull request, without its type', () => {
+  assert.strictEqual(changelogFor('fix: keep the login (#63)\n\n* fix: one\n* fix: two'), 'keep the login (#63)');
+});
+
+test('the scope and a "!" go with the type', () => {
+  assert.strictEqual(changelogFor('feat: new feature xyz'), 'new feature xyz');
+  assert.strictEqual(changelogFor('feat(widget)!: new feature xyz'), 'new feature xyz');
+});
+
+test('a title that follows no convention goes into the changelog as it is', () => {
+  assert.strictEqual(changelogFor('Open Picnic when the widget is tapped'), 'Open Picnic when the widget is tapped');
+});
+
+test('a type with nothing after it is replaced by a changelog the CLI accepts', () => {
+  assert.strictEqual(changelogFor('fix: x'), 'Test version built from master');
 });
 
 test('a title too short for the CLI is replaced by one it accepts', () => {
