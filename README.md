@@ -180,6 +180,17 @@ there first. `make previews` redraws the two preview images in
 which comes with librsvg: `brew install librsvg` on macOS, `apt install
 librsvg2-bin` on Debian or Ubuntu, `choco install rsvg-convert` on Windows.
 
+## Test versions
+
+Every merge to `master` that changes the app is published to Homey as its Test
+version by [deploy-test.yml](.github/workflows/deploy-test.yml), once the tests
+and validation pass. The version bump follows the pull request title as a
+conventional commit: `feat!:` is major, `feat:` minor, anything else a patch.
+The title also becomes the changelog entry, and the workflow commits both to
+`master`. Merges that only touch files in [.homeyignore](.homeyignore) publish
+nothing. Going Live is still done in the
+[Homey Developer Tools](https://tools.developer.homey.app).
+
 ## Formatting
 
 [.editorconfig](.editorconfig) holds the formatting this repository agrees on:

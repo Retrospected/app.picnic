@@ -1,0 +1,173 @@
+# Publishes every merge to master to Homey as its Test version, so a change can
+# be tried on a real Homey without anyone publishing by hand. The tests and the
+# App Store validation run first, and nothing is published unless they pass.
+#
+# The version follows the title of what was merged, as a conventional commit,
+# and that title becomes its changelog: see scripts/homey-release.js. Once the
+# build is on Homey, the new version and changelog are committed to master.
+#
+# A merge that only changes what stays out of the app, what .homeyignore names
+# and the dotfiles besides, is tested and publishes nothing: no build, no
+# version, no changelog. Run by hand, the workflow publishes regardless.
+#
+# It needs these secrets in the `test-deploy` environment, which only the
+# publishing job can read:
+#
+# - HOMEY_PAT, the Homey app owner's Personal Access Token, from
+#   https://tools.developer.homey.app/me
+# - RELEASE_APP_ID and RELEASE_APP_PRIVATE_KEY, of the GitHub App "Picnic App
+#   Worker", which the ruleset on master lets push the version commit. The
+#   workflow's own token is held to the ruleset like anyone else
+name: Deploy to Homey as Test
+
+on:
+  push:
+    branches: [master]
+  # to publish master again by hand, from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # the commit this workflow makes itself is only the version and changelog
+    # of a build already on Homey. Pushed by the app it does start a run, and
+    # this is where that run ends
+    if: "!startsWith(github.event.head_commit.message, 'chore(release): ')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ships: ${{ steps.ships.outputs.ships }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # the commit before it, to see what this one changes
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Formatting, against .editorconfig
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Validate at App Store level
+        run: npm run validate
+
+      - name: Does anything in the app change?
+        id: ships
+        run: |
+          node scripts/homey-release.js ships
+          if grep -q '^ships=false$' "$GITHUB_OUTPUT"; then
+            echo "Nothing that ships in the app changed, so nothing is published and the version stays as it is." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  publish:
+    needs: test
+    # a run started by hand from another branch has nothing to publish, and a
+    # merge that changes nothing in the app neither
+    if: >-
+      github.ref == 'refs/heads/master' &&
+      (needs.test.outputs.ships == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: test-deploy
+
+    # one publish at a time: two at once would pick the same version. A run
+    # that is waiting is not cancelled, it publishes after the one ahead of it.
+    # This sits on the job rather than the workflow, so that the run the
+    # version commit starts, which publishes nothing, cannot take the place of
+    # a merge that is waiting its turn
+    concurrency:
+      group: deploy-test
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # the version on master may be ahead of this commit, when something else
+      # was merged and published while this run waited its turn
+      - name: Fetch master
+        run: git fetch --depth=1 origin master
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # the publish action installs with `npm ci`, which wants the lock file
+      # this repository does not commit
+      - name: Lock the dependencies
+        run: npm install --package-lock-only --no-audit --no-fund
+
+      # the client for Athom's API, kept out of the app: the publish action
+      # reinstalls the app's node_modules from the lock file
+      - name: Install the Homey API client
+        run: npm install --prefix "$RUNNER_TEMP/homey-api" --no-audit --no-fund homey-api@^3
+
+      - name: Pick the version and the changelog
+        id: prepare
+        run: node scripts/homey-release.js prepare
+        env:
+          HOMEY_PAT: ${{ secrets.HOMEY_PAT }}
+          NODE_PATH: ${{ runner.temp }}/homey-api/node_modules
+
+      - name: Publish as a Draft
+        id: publish
+        uses: athombv/github-action-homey-app-publish@v1
+        with:
+          personal_access_token: ${{ secrets.HOMEY_PAT }}
+
+      - name: Make the Draft the Test version
+        run: node scripts/homey-release.js promote
+        env:
+          HOMEY_PAT: ${{ secrets.HOMEY_PAT }}
+          NODE_PATH: ${{ runner.temp }}/homey-api/node_modules
+
+      # a token of the app, valid for an hour, for this repository only
+      - name: Sign in as Picnic App Worker
+        id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      # onto master as it is by now, which is this commit or one after it
+      - name: Commit the version and changelog to master
+        env:
+          VERSION: ${{ steps.prepare.outputs.version }}
+          APP_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          # the publish action runs as root and leaves its files that way
+          sudo chown -R "$(id -u):$(id -g)" .
+
+          # the commit is the app's, which is who the ruleset lets through
+          user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          for attempt in 1 2 3; do
+            git fetch --depth=1 origin master
+            git checkout -f -B release origin/master
+            node scripts/homey-release.js apply "$VERSION" "$GITHUB_SHA"
+            git commit -q -am "chore(release): v$VERSION"
+            git push origin HEAD:master && exit 0
+            sleep 5
+          done
+          exit 1
+
+      - name: Summary
+        run: |
+          echo "Published v${{ steps.prepare.outputs.version }} as the Test version." >> "$GITHUB_STEP_SUMMARY"
+          echo "Manage it at ${{ steps.publish.outputs.url }}." >> "$GITHUB_STEP_SUMMARY"
