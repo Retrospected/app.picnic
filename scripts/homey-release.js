@@ -21,10 +21,11 @@
 //
 // It counts from the highest of the version in the commit that is published,
 // the one on master by now, and the highest build Homey has, since Homey takes
-// every version only once and only ever a higher one. That title is also the
-// changelog of the new version, without its type. `apply` writes both into .homeycompose/app.json,
-// app.json, package.json and .homeychangelog.json, which `prepare` does for the
-// build and the workflow does again on master, to commit them there.
+// every version only once and only ever a higher one. That title, without its
+// type and pull request number, is also the changelog of the new version.
+// `apply` writes both into .homeycompose/app.json, app.json, package.json and
+// .homeychangelog.json, which `prepare` does for the build and the workflow
+// does again on master, to commit them there.
 
 const fs = require('fs');
 const path = require('path');
@@ -87,10 +88,14 @@ function nextVersion(versions, bump) {
   return major + '.' + minor + '.' + (patch + 1);
 }
 
-// the title without its conventional commit type, which says something to
-// whoever reads the history but nothing to whoever reads the App Store
+// the title without its conventional commit type and the number of its pull
+// request, which say something to whoever reads the history but nothing to
+// whoever reads the App Store, and starting with a capital
 function changelogFor(commitMessage) {
-  const title = titleOf(commitMessage).replace(/^\w+(\([^)]*\))?!?:\s*/, '');
+  const text = titleOf(commitMessage)
+    .replace(/^\w+(\([^)]*\))?!?:\s*/, '')
+    .replace(/\s*\(#\d+\)$/, '');
+  const title = text.charAt(0).toUpperCase() + text.slice(1);
 
   // the CLI turns down anything of three characters or fewer
   return title.length > 3 ? title : 'Test version built from master';
