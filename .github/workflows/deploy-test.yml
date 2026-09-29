@@ -1,0 +1,95 @@
+# Publishes every merge to master to Homey as its Test version, so a change can
+# be tried on a real Homey without anyone publishing by hand. The tests and the
+# App Store validation run first, and nothing is published unless they pass.
+#
+# It needs the app owner's Personal Access Token, from
+# https://tools.developer.homey.app/me, as the secret HOMEY_PAT of the
+# `test-deploy` environment. Only the publishing job can read it.
+name: Deploy to Homey as Test
+
+on:
+  push:
+    branches: [master]
+  # to publish master again by hand, from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# one publish at a time: two at once would pick the same version. A run that
+# is waiting is not cancelled, it publishes after the one ahead of it
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Formatting, against .editorconfig
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Validate at App Store level
+        run: npm run validate
+
+  publish:
+    needs: test
+    # a run started by hand from another branch has nothing to publish
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: test-deploy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # the publish action installs with `npm ci`, which wants the lock file
+      # this repository does not commit
+      - name: Lock the dependencies
+        run: npm install --package-lock-only --no-audit --no-fund
+
+      # the client for Athom's API, kept out of the app: the publish action
+      # reinstalls the app's node_modules from the lock file
+      - name: Install the Homey API client
+        run: npm install --prefix "$RUNNER_TEMP/homey-api" --no-audit --no-fund homey-api@^3
+
+      - name: Pick the version and the changelog
+        id: prepare
+        run: node scripts/homey-release.js prepare
+        env:
+          HOMEY_PAT: ${{ secrets.HOMEY_PAT }}
+          NODE_PATH: ${{ runner.temp }}/homey-api/node_modules
+
+      - name: Publish as a Draft
+        id: publish
+        uses: athombv/github-action-homey-app-publish@v1
+        with:
+          personal_access_token: ${{ secrets.HOMEY_PAT }}
+
+      - name: Make the Draft the Test version
+        run: node scripts/homey-release.js promote
+        env:
+          HOMEY_PAT: ${{ secrets.HOMEY_PAT }}
+          NODE_PATH: ${{ runner.temp }}/homey-api/node_modules
+
+      - name: Summary
+        run: |
+          echo "Published v${{ steps.prepare.outputs.version }} as the Test version." >> "$GITHUB_STEP_SUMMARY"
+          echo "Manage it at ${{ steps.publish.outputs.url }}." >> "$GITHUB_STEP_SUMMARY"

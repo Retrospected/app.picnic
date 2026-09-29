@@ -180,6 +180,31 @@ there first. `make previews` redraws the two preview images in
 which comes with librsvg: `brew install librsvg` on macOS, `apt install
 librsvg2-bin` on Debian or Ubuntu, `choco install rsvg-convert` on Windows.
 
+## Test versions
+
+Every merge to `master` is published to Homey as the app's Test version by
+[.github/workflows/deploy-test.yml](.github/workflows/deploy-test.yml), so a
+change can be tried on a real Homey without anyone publishing it by hand. The
+tests and the App Store validation run first, and nothing is published unless
+they pass. The build lands as a Draft in the
+[Homey Developer Tools](https://tools.developer.homey.app) and
+`scripts/homey-release.js` then moves it to Test. Going Live is still a click
+in the Developer Tools.
+
+Homey takes every version number only once, and only ever a higher one. The
+workflow publishes the version in `.homeycompose/app.json` when no build has
+it yet, and otherwise the patch after the highest build Homey has. That number
+is only set in the CI run and is not committed back. For a release, bump the
+version and add its changelog to `.homeychangelog.json` in the pull request as
+before, and the merge publishes it under that number. A version without a
+changelog gets the title of the merged pull request as its changelog.
+
+The workflow needs the app owner's Personal Access Token, from
+[tools.developer.homey.app/me](https://tools.developer.homey.app/me), as the
+secret `HOMEY_PAT` of the `test-deploy` environment under **Settings →
+Environments** in GitHub. It can also be run by hand from the Actions tab to
+publish `master` again.
+
 ## Formatting
 
 [.editorconfig](.editorconfig) holds the formatting this repository agrees on:
