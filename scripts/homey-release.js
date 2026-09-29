@@ -46,11 +46,6 @@ const packagePath = path.join(appPath, 'package.json');
 const changelogPath = path.join(appPath, '.homeychangelog.json');
 const homeyignorePath = path.join(appPath, '.homeyignore');
 
-// the client the Homey CLI identifies itself with, which is what a Personal
-// Access Token is issued to use
-const CLI_CLIENT_ID = '64691b4358336640a5ecee5c';
-const CLI_CLIENT_SECRET = 'ed09f559ae12b1522d00431f0bf7c5755603c41e';
-
 // a fresh build is processed before it can go anywhere
 const PROMOTE_ATTEMPTS = 20;
 const PROMOTE_INTERVAL = 15 * 1000;
@@ -177,9 +172,9 @@ async function appsApi() {
   const { AthomCloudAPI, AthomAppsAPI } = require('homey-api');
   const Token = require('homey-api/lib/AthomCloudAPI/Token');
 
+  // a Personal Access Token needs no client of its own: that is only for
+  // signing in and refreshing a token, and this token is never refreshed
   const cloud = new AthomCloudAPI({
-    clientId: CLI_CLIENT_ID,
-    clientSecret: CLI_CLIENT_SECRET,
     autoRefreshTokens: false,
     token: new Token({ access_token: pat })
   });
