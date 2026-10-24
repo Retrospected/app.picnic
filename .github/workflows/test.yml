@@ -35,6 +35,9 @@ jobs:
       - name: Formatting, against .editorconfig
         run: npm run lint
 
+      - name: Types, of the app, the tests and the scripts
+        run: npm run typecheck
+
       - name: Tests
         run: npm test
 

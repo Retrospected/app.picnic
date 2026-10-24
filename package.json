@@ -3,9 +3,11 @@
   "version": "3.8.2",
   "description": "Doing your groceries at Picnic via Homey.",
   "scripts": {
-    "test": "node --test",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"test/*.test.ts\"",
     "lint": "editorconfig-checker",
-    "validate": "node scripts/validate.js",
+    "validate": "tsx scripts/validate.ts",
     "deps": "node scripts/deps.js",
     "prestart": "node scripts/deps.js",
     "start": "homey app run",
@@ -14,8 +16,8 @@
     "preinstall:homey": "node scripts/deps.js",
     "install:homey": "homey app install",
     "compose": "homey app compose",
-    "gallery": "node scripts/widget-gallery.js",
-    "previews": "node scripts/previews.js",
+    "gallery": "tsx scripts/widget-gallery.ts",
+    "previews": "tsx scripts/previews.ts",
     "prevalidate:cli": "node scripts/deps.js",
     "validate:cli": "homey app validate --level publish"
   },
@@ -39,7 +41,13 @@
   },
   "homepage": "https://github.com/Retrospected/app.picnic#readme",
   "devDependencies": {
+    "@types/homey": "npm:homey-apps-sdk-v3-types@^0.3.12",
+    "@types/md5": "^2.3.6",
+    "@types/node": "^22.20.5",
+    "@types/node-schedule": "^2.1.8",
     "editorconfig-checker": "^6.2.0",
-    "homey-lib": "^2.52.2"
+    "homey-lib": "^2.52.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }

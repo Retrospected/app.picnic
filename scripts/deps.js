@@ -10,7 +10,11 @@
 //   Error: This error may be fixed by running `npm install` in your app.
 //
 // A fresh clone is exactly that state, so every script here that goes on to
-// call the CLI runs this first.
+// call the CLI runs this first. The development dependencies count too: the
+// CLI builds the app by compiling its TypeScript, and the compiler is one.
+//
+// Not TypeScript, like scripts/homey-release.js: it runs before what runs
+// TypeScript has been installed.
 //
 // Deliberately not "npm install every time": that would need the registry on
 // every run, and a laptop on a train would then be unable to start an app
@@ -24,8 +28,8 @@ const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 function dependenciesAreInstalled() {
   try {
-    // the same question the CLI asks, without the deprecated flag it asks it with
-    execFileSync(npm, ['ls', '--parseable', '--all', '--omit=dev'], { cwd: appPath, stdio: 'ignore' });
+    // the question the CLI asks, about the development dependencies as well
+    execFileSync(npm, ['ls', '--parseable', '--all'], { cwd: appPath, stdio: 'ignore' });
     return true;
   } catch (exception) {
     return false;

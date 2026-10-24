@@ -11,7 +11,7 @@ integration. Anything not confirmed is marked so.
 - **Base URL** `https://storefront-prod.{nl|de}.picnicinternational.com/api/15`
 - **Amounts** are integer cents. **Moments** are ISO 8601 strings with an
   offset, e.g. `2026-07-15T14:15:00.000+02:00`.
-- **Headers** on every call, from `lib/picnicheaders.js`:
+- **Headers** on every call, from `lib/picnicheaders.ts`:
 
   | Header | Value |
   | --- | --- |
@@ -38,7 +38,7 @@ A token whose second factor has not been verified is refused on **every** call
 with HTTP 403 and `{"error":{"code":"TWO_FACTOR_AUTHENTICATION_REQUIRED"}}`.
 Logging in again does not fix that; a verified code does. (Seen on a real
 account; none of the public clients handle this code.) A token Picnic no longer
-accepts at all is HTTP 401. `lib/refusal.js` tells the two apart.
+accepts at all is HTTP 401. `lib/refusal.ts` tells the two apart.
 
 ## Deliveries
 
@@ -50,7 +50,7 @@ for all). A list of deliveries, newest first:
 | `delivery_id` | what to ask `GET /deliveries/{id}` about |
 | `status` | `CURRENT`, `COMPLETED`, `CANCELLED` |
 | `slot.window_start`, `slot.window_end` | the slot that was booked |
-| `slot.cut_off_time` | until when the order can still be changed; matches Picnic's FAQ rule of 13:00 the day before a morning slot and 23:00 the day before a later one, which `lib/cutoff.js` falls back on |
+| `slot.cut_off_time` | until when the order can still be changed; matches Picnic's FAQ rule of 13:00 the day before a morning slot and 23:00 the day before a later one, which `lib/cutoff.ts` falls back on |
 | `eta2.start`, `eta2.end` | the delivery moment, once Picnic announces it (~20 minutes wide) |
 | `delivery_time.start`, `.end` | when the driver arrived and left |
 | `orders[].total_price` | per order; a delivery can carry several, and Home Assistant sums them the same way. Whether it includes deposit is not documented |
@@ -100,7 +100,7 @@ then on.
 **`GET /deliveries/{id}/position`**: the van on its route. Not seen live yet;
 the shape is the one the typed Go client and Home Assistant model, and Home
 Assistant notes it is "only available shortly before the actual delivery" and
-answers with an **empty body** until then, which `lib/positionresponse.js`
+answers with an **empty body** until then, which `lib/positionresponse.ts`
 reads as "nothing to say yet" rather than as a failure.
 
 | Field | Meaning |
@@ -148,5 +148,5 @@ Other cart calls the app makes: `POST /cart/add_product` with
 
 Under `make run` (and only then: Homey sets `process.env.DEBUG` to `'1'` for
 `homey app run`), the app logs every cart, summary and delivery answer with
-personal details blanked out, via `lib/debuglog.js`. Open the widget or let the
+personal details blanked out, via `lib/debuglog.ts`. Open the widget or let the
 poll run, then read the `Picnic answered …` lines in the `make run` output.

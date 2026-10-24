@@ -125,7 +125,9 @@ its own lists the rest:
 | `make run` | Run the app on your Homey, until you stop it |
 | `make run-clean` | Run it after deleting the stored data. See the warning below |
 | `make install` | Install the app on your Homey, where it stays after the CLI is closed |
-| `make test` | The unit tests, which need nothing but Node and no dependencies at all |
+| `make test` | The unit tests, which need no Homey and no Picnic account |
+| `make typecheck` | Check the types of the app, the tests and the scripts |
+| `make build` | Compile the app into `.homeybuild`, which `make run` and `make install` do by themselves |
 | `make lint` | Check every file against [.editorconfig](.editorconfig) |
 | `make validate` | Validates the app the way the App Store does, without the CLI and without a Homey |
 | `make compose` | Regenerate `app.json` from `.homeycompose` and the widgets |
@@ -135,10 +137,22 @@ its own lists the rest:
 
 Every one of those has an npm script that does the same, so without `make` on
 your machine, Windows most likely, they are `npm start`,
-`npm run start:clean`, `npm run install:homey`, `npm test`, `npm run lint`,
-`npm run validate`, `npm run compose`, `npm run validate:cli`,
-`npm run gallery` and `npm run previews`. Nothing here needs anything but Node
-either way.
+`npm run start:clean`, `npm run install:homey`, `npm test`,
+`npm run typecheck`, `npm run build`, `npm run lint`, `npm run validate`,
+`npm run compose`, `npm run validate:cli`, `npm run gallery` and
+`npm run previews`. Nothing here needs anything but Node and what
+`npm install` puts next to it, either way.
+
+The app is written in TypeScript, and Homey runs JavaScript. The Homey CLI
+sees `typescript` among the dependencies and runs `npm run build` before it
+hands the app over, which compiles `app.ts`, `api.ts`, `lib/` and the widget's
+`api.ts` into `.homeybuild/` as CommonJS, next to everything else the app
+ships with. What it compiles is listed in `tsconfig.build.json`; `tsconfig.json`
+covers the tests and the scripts as well, for `make typecheck` and your editor,
+and CI checks the lot on every pull request. The tests and the scripts never
+need compiling: they run straight from their TypeScript through
+[tsx](https://tsx.is). The widget's page and the settings page are what a
+browser runs as they are, and stay JavaScript.
 
 **`--clean` costs you your login.** It deletes the app's stored data, and this
 app keeps your Picnic credentials, its session and the order it is following
@@ -172,11 +186,11 @@ make gallery
 ```
 
 serves a page with the widget's own code fed each of the states in
-`test/support/widgetstates.js`, in both widths and both themes and either
+`test/support/widgetstates.ts`, in both widths and both themes and either
 language; edit the widget or the states and reload. Those same states go
 through the widget in the tests, so a state that renders wrong is caught
 there first. `make previews` redraws the two preview images in
-`widgets/delivery/` from `scripts/previews.js`. That one needs `rsvg-convert`,
+`widgets/delivery/` from `scripts/previews.ts`. That one needs `rsvg-convert`,
 which comes with librsvg: `brew install librsvg` on macOS, `apt install
 librsvg2-bin` on Debian or Ubuntu, `choco install rsvg-convert` on Windows.
 
