@@ -115,5 +115,8 @@
   },
   "3.8.3": {
     "en": "Move the app to TypeScript"
+  },
+  "3.9.0": {
+    "en": "Implement product ID parsing from search responses"
   }
 }
