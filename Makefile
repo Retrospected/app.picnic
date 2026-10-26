@@ -12,7 +12,7 @@ NPM ?= npm
 HOMEY ?= homey
 
 .DEFAULT_GOAL := help
-.PHONY: help run run-clean install test lint validate compose validate-cli gallery previews homey-cli
+.PHONY: help run run-clean install test typecheck build lint validate compose validate-cli gallery previews homey-cli
 
 help: ## Say what is here
 	@echo "make <target>"
@@ -29,13 +29,19 @@ install: node_modules homey-cli ## Install the app on your Homey, where it stays
 	$(HOMEY) app install
 
 test: node_modules ## Run the tests
-	node --test
+	$(NPM) test
+
+typecheck: node_modules ## Check the types of everything, the tests and scripts included
+	$(NPM) run typecheck
+
+build: node_modules ## Compile what Homey runs into .homeybuild, as `make run` does by itself
+	$(NPM) run build
 
 lint: node_modules ## Check every file against .editorconfig
 	npx editorconfig-checker
 
 validate: node_modules ## Check the app the way the App Store does, without a Homey
-	node scripts/validate.js
+	$(NPM) run validate
 
 compose: node_modules homey-cli ## Regenerate app.json from .homeycompose and the widgets
 	$(HOMEY) app compose
@@ -43,11 +49,11 @@ compose: node_modules homey-cli ## Regenerate app.json from .homeycompose and th
 validate-cli: node_modules homey-cli ## The same validation, through the Homey CLI
 	$(HOMEY) app validate --level publish
 
-gallery: ## Show every state of the dashboard widget in a browser, without a Homey
-	node scripts/widget-gallery.js
+gallery: node_modules ## Show every state of the dashboard widget in a browser, without a Homey
+	$(NPM) run gallery
 
-previews: ## Redraw the widget's preview images for the App Store
-	node scripts/previews.js
+previews: node_modules ## Redraw the widget's preview images for the App Store
+	$(NPM) run previews
 
 # The dependencies, installed only when package.json is newer than the last
 # install. npm does not always leave a mark make can read, so one is left here.

@@ -1,0 +1,25 @@
+{
+  // Everything in the repository that is TypeScript, for the editor and for
+  // `npm run typecheck`. What Homey runs is a part of it, built by
+  // tsconfig.build.json; the Homey CLI reads outDir from this file and refuses
+  // to build unless it is .homeybuild, where it puts the rest of the app.
+  "compilerOptions": {
+    // the Node version Homey runs apps on
+    "target": "es2023",
+    "lib": ["es2023"],
+    "types": ["node"],
+    // CommonJS, as Homey loads an app unless it is told otherwise
+    "module": "nodenext",
+    "strict": true,
+    // the tests run through tsx, which compiles one file at a time
+    "isolatedModules": true,
+    // for scripts/homey-release.js, which the release workflow runs before
+    // anything is installed, and whose test imports it
+    "allowJs": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": ".",
+    "outDir": "./.homeybuild"
+  },
+  "include": ["app.ts", "api.ts", "lib/*.ts", "widgets/*/api.ts", "test/**/*.ts", "scripts/*.ts"]
+}

@@ -1,0 +1,6 @@
+{
+  // What Homey runs: the app, its API and the widget's, without the tests and
+  // the scripts around them. `npm run build`, which the Homey CLI calls.
+  "extends": "./tsconfig.json",
+  "include": ["app.ts", "api.ts", "lib/*.ts", "widgets/*/api.ts"]
+}
