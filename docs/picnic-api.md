@@ -142,7 +142,11 @@ showed.
 Other cart calls the app makes: `POST /cart/add_product` with
 `{ count, product_id }` answers with the whole cart, or the same cart and
 `UNPROCESSABLE_ENTITY` when it is locked. Product search is
-`GET /pages/search-page-results?search_term=…`.
+`GET /pages/search-page-results?search_term=…`. Since October 2026 it answers
+with `{ script, layout }`: the page is under `layout`, and the analytics
+context's `product_ids` is `{ type: "EXPRESSION", expression: "<name of a
+function in script>", props: { v0: [ids] } }`, where `v0` is the results in
+the order shown (see `lib/searchresponse.ts`).
 
 ## Seeing what Picnic answers
 
