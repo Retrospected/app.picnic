@@ -1,10 +1,10 @@
 import https from 'https'
 import BaseClass, { type PicnicHomey } from './baseclass'
 import { parseAddProductResponse } from './cartresponse'
+import { parseSearchResponse } from './searchresponse'
 import { PICNIC_AGENT, PICNIC_DID } from './picnicheaders'
 import { toError } from './errors'
 import { refusal } from './refusal'
-import type { PicnicJson } from './picnicjson'
 
 export { UNAUTHORIZED, SECOND_FACTOR_REQUIRED } from './refusal'
 
@@ -179,24 +179,14 @@ export default class Utils extends BaseClass {
       });
 
       res.on('end', function () {
-        try {
-          self.homey.app.debug("Raw search results:")
-          self.homey.app.debug(JSON.stringify(body))
-          var analyticsContexts = JSON.parse(body)["body"]["child"]["analytics"]["contexts"]
-          var productContext = analyticsContexts.find((c: PicnicJson) => c["data"] && c["data"]["product_ids"])
-          var productIdData = productContext && productContext["data"]["product_ids"]
-          var productId: string | undefined;
-          if (Array.isArray(productIdData)) {
-            productId = productIdData[0];
-          } else if (productIdData && productIdData.type === "EXPRESSION" && typeof productIdData.expression === 'string') {
-            var expressionMatch = productIdData.expression.match(/return (\["[^"]*"(?:,"[^"]*")*\])/)
-            productId = expressionMatch ? JSON.parse(expressionMatch[1])[0] : undefined;
-          }
-          if (typeof productId == 'undefined') { return callback(new Error("Couldn't find item")); }
-          return callback(productId);
-        } catch (error) {
+        self.homey.app.debug("Search answered " + res.statusCode + " with " + body.length + " characters")
+        const outcome = parseSearchResponse(body);
+        if (outcome.productId === undefined) {
+          self.homey.app.debug("No product found for '" + data + "': " + outcome.reason)
           return callback(new Error("Couldn't find item"));
         }
+        self.homey.app.debug("Found product " + outcome.productId + " for '" + data + "'")
+        return callback(outcome.productId);
       });
     }).on('error', (e) => {
       self.homey.app.debug("ERROR: " + e.message)
