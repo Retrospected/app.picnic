@@ -1,6 +1,6 @@
 {
   "name": "app.picnic",
-  "version": "3.8.2",
+  "version": "3.8.3",
   "description": "Doing your groceries at Picnic via Homey.",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
