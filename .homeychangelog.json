@@ -112,5 +112,8 @@
   },
   "3.8.2": {
     "en": "Tapping on the widget opens your Picnic app"
+  },
+  "3.8.3": {
+    "en": "Move the app to TypeScript"
   }
 }
